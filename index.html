@@ -9,6 +9,7 @@
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    
     <style>
         body { font-family: 'Inter', sans-serif; background-color: #e0f2fe; }
         .hide-scrollbar::-webkit-scrollbar { display: none; }
@@ -298,16 +299,12 @@
         ];
 
         const App = () => {
-            // 基礎介面狀態
             const [currentTab, setCurrentTab] = useState('dashboard');
             const [searchQuery, setSearchQuery] = useState('');
             const [filterTier, setFilterTier] = useState('All');
             const [selectedItem, setSelectedItem] = useState(null);
-            
-            // ★ 新增：追蹤目前選擇的「排序方式」
             const [sortBy, setSortBy] = useState('newest'); 
             
-            // 收藏庫狀態 (使用 LocalStorage 確保重整後資料還在)
             const [collection, setCollection] = useState(() => {
                 const saved = localStorage.getItem('satoSuguCollection_v2');
                 return saved ? JSON.parse(saved) : [];
@@ -317,7 +314,6 @@
                 return saved ? JSON.parse(saved) : [];
             });
 
-            // 當 collection 或 wishlist 改變時，自動存入瀏覽器
             useEffect(() => {
                 localStorage.setItem('satoSuguCollection_v2', JSON.stringify(collection));
                 localStorage.setItem('satoSuguWishlist_v2', JSON.stringify(wishlist));
@@ -328,7 +324,7 @@
                     setCollection(collection.filter(itemId => itemId !== id));
                 } else {
                     setCollection([...collection, id]);
-                    setWishlist(wishlist.filter(itemId => itemId !== id)); // 收入收藏庫後，自動從願望清單移除
+                    setWishlist(wishlist.filter(itemId => itemId !== id));
                 }
             };
 
@@ -341,7 +337,6 @@
                 }
             };
 
-            // ★ 修改：先進行文字與標籤篩選，接著執行「排序」
             const processedData = plushData
                 .filter(item => {
                     const matchSearch = item.nameJP.toLowerCase().includes(searchQuery.toLowerCase()) || 
@@ -351,17 +346,12 @@
                     return matchSearch && matchTier;
                 })
                 .sort((a, b) => {
-                    // 根據 sortBy 的值，決定排列順序
                     if (sortBy === 'tier') {
-                        // 賦予級別對應的數字權重 (Max 最高)
                         const tierWeight = { 'Max': 4, 'High': 3, 'Medium': 2, 'low': 1 };
                         return tierWeight[b.tier] - tierWeight[a.tier];
                     } else if (sortBy === 'rarity') {
-                        // 入手難易度直接比較數字 (5星 > 1星)
                         return b.rarity - a.rarity;
                     } else {
-                        // newest 新增日期：藉由比較 ID 字串，讓後面的編號排在前面 (降冪)
-                        // 假設 plush-012 比 plush-001 新
                         return b.id.localeCompare(a.id);
                     }
                 });
@@ -391,53 +381,51 @@
             return (
                 <div className="min-h-screen bg-gradient-to-br from-sky-100 via-white to-blue-100 flex flex-col font-sans text-slate-800 selection:bg-sky-200">
                     
-                    {/* Header Banner - 主視覺區塊 */}
-                    <header className="w-full h-[350px] relative overflow-hidden flex-shrink-0 z-10 shadow-[0_4px_20px_rgba(14,165,233,0.1)]">
-                        {/* 這裡已為您預留圖檔網址的替換空間 */}
+                    {/* ★ 修正 1：主視覺區塊高度設定為響應式 (h-[180px] sm:h-[220px] md:h-[350px]) */}
+                    <header className="w-full h-[180px] sm:h-[220px] md:h-[350px] relative overflow-hidden flex-shrink-0 z-10 shadow-[0_4px_20px_rgba(14,165,233,0.1)] transition-all duration-300">
                         <img 
                             src="image_header.jpg" 
                             alt="懷玉・玉折" 
                             className="w-full h-full object-cover"
                         />
                         <div className="absolute inset-0 bg-gradient-to-t from-sky-900/40 to-transparent"></div>
-                        <div className="absolute bottom-6 left-6 md:left-12 flex items-center gap-4">
-                            <div className="glass-panel px-6 py-3 rounded-2xl">
-                                <h1 className="text-2xl md:text-3xl font-black text-white drop-shadow-md tracking-wide">
+                        <div className="absolute bottom-4 left-4 md:bottom-6 md:left-12 flex items-center gap-4">
+                            <div className="glass-panel px-4 py-2 md:px-6 md:py-3 rounded-xl md:rounded-2xl">
+                                <h1 className="text-xl md:text-3xl font-black text-white drop-shadow-md tracking-wide">
                                     【非公式】五夏娃全圖鑑
                                 </h1>
-                                <p className="text-sky-100 text-sm font-medium mt-1 drop-shadow">
+                                <p className="text-sky-100 text-xs md:text-sm font-medium mt-1 drop-shadow">
                                     Gojo Satoru x Geto Suguru
                                 </p>
                             </div>
                         </div>
                     </header>
 
-                    {/* 下方內容區 (側邊欄 + 主畫面) */}
                     <div className="flex-1 flex flex-col md:flex-row relative z-20 -mt-2">
                         
-                        {/* Sidebar 側邊導覽列 */}
+                        {}
                         <aside className="w-full md:w-64 glass-panel border-t-0 md:border-t md:border-r border-white/60 flex-shrink-0 flex flex-col rounded-tr-3xl md:rounded-tr-none z-20">
-                            <div className="p-6 md:p-8">
-                                <nav className="space-y-2.5 flex flex-row md:flex-col overflow-x-auto hide-scrollbar">
+                            <div className="p-4 md:p-8">
+                                {/* ★ 修正 2：將 space-y-2.5 改為 gap-2 md:gap-3 */}
+                                <nav className="flex flex-row md:flex-col gap-2 md:gap-3 overflow-x-auto hide-scrollbar">
                                     <button 
                                         onClick={() => setCurrentTab('dashboard')}
-                                        className={`flex-shrink-0 flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-300 font-bold text-sm ${currentTab === 'dashboard' ? 'bg-sky-500 text-white shadow-md shadow-sky-500/30' : 'text-slate-600 hover:bg-white/60 hover:text-sky-600'}`}>
+                                        className={`flex-shrink-0 flex items-center gap-2 md:gap-3 px-4 py-3 rounded-xl transition-all duration-300 font-bold text-sm ${currentTab === 'dashboard' ? 'bg-sky-500 text-white shadow-md shadow-sky-500/30' : 'text-slate-600 hover:bg-white/60 hover:text-sky-600'}`}>
                                         <Icon name="layout-dashboard" size={20} className={currentTab === 'dashboard' ? "text-white" : "text-sky-500"} /> 總覽面板
                                     </button>
                                     <button 
                                         onClick={() => setCurrentTab('gallery')}
-                                        className={`flex-shrink-0 flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-300 font-bold text-sm ${currentTab === 'gallery' ? 'bg-sky-500 text-white shadow-md shadow-sky-500/30' : 'text-slate-600 hover:bg-white/60 hover:text-sky-600'}`}>
+                                        className={`flex-shrink-0 flex items-center gap-2 md:gap-3 px-4 py-3 rounded-xl transition-all duration-300 font-bold text-sm ${currentTab === 'gallery' ? 'bg-sky-500 text-white shadow-md shadow-sky-500/30' : 'text-slate-600 hover:bg-white/60 hover:text-sky-600'}`}>
                                         <Icon name="grid" size={20} className={currentTab === 'gallery' ? "text-white" : "text-sky-500"} /> 圖鑑列表
                                     </button>
                                     <button 
                                         onClick={() => setCurrentTab('collection')}
-                                        className={`flex-shrink-0 flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-300 font-bold text-sm ${currentTab === 'collection' ? 'bg-sky-500 text-white shadow-md shadow-sky-500/30' : 'text-slate-600 hover:bg-white/60 hover:text-sky-600'}`}>
+                                        className={`flex-shrink-0 flex items-center gap-2 md:gap-3 px-4 py-3 rounded-xl transition-all duration-300 font-bold text-sm ${currentTab === 'collection' ? 'bg-sky-500 text-white shadow-md shadow-sky-500/30' : 'text-slate-600 hover:bg-white/60 hover:text-sky-600'}`}>
                                         <Icon name="library" size={20} className={currentTab === 'collection' ? "text-white" : "text-sky-500"} /> 我的收藏
                                     </button>
                                 </nav>
                             </div>
                             
-                            {/* Sidebar 底部統計 */}
                             <div className="p-6 hidden md:block mt-auto border-t border-white/40">
                                 <div className="glass-card rounded-2xl p-4">
                                     <p className="text-xs font-semibold text-slate-500 mb-2 uppercase tracking-wider">個人收藏進度</p>
@@ -455,13 +443,12 @@
                             </div>
                         </aside>
 
-                        {/* 主內容區塊 */}
+                        {}
                         <main className="flex-1 p-6 md:p-8 overflow-y-auto hide-scrollbar">
                             
-                            {}
                             {currentTab === 'dashboard' && (
                                 <div className="space-y-8 animate-in fade-in duration-500">
-                                    <h2 className="text-2xl font-black text-slate-800 flex items-center gap-2">
+                                    <h2 className="text-xl md:text-2xl font-black text-slate-800 flex items-center gap-2">
                                         <span className="w-1.5 h-6 bg-sky-500 rounded-full"></span>
                                         資料庫總覽
                                     </h2>
@@ -473,8 +460,8 @@
                                             { label: '五條悟商品', value: plushData.filter(d => d.satoGojo).length, color: 'text-blue-500' },
                                             { label: '夏油傑商品', value: plushData.filter(d => d.suguruGeto).length, color: 'text-indigo-500' }
                                         ].map((stat, i) => (
-                                            <div key={i} className="glass-panel p-5 rounded-2xl flex flex-col justify-center items-center text-center">
-                                                <span className={`text-3xl font-black ${stat.color}`}>{stat.value}</span>
+                                            <div key={i} className="glass-panel p-4 md:p-5 rounded-2xl flex flex-col justify-center items-center text-center">
+                                                <span className={`text-2xl md:text-3xl font-black ${stat.color}`}>{stat.value}</span>
                                                 <span className="text-xs font-bold text-slate-500 mt-1">{stat.label}</span>
                                             </div>
                                         ))}
@@ -482,10 +469,10 @@
 
                                     <div className="mt-8">
                                         <h3 className="text-lg font-bold text-slate-700 mb-4">💎 我的焦點</h3>
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
                                             {plushData.filter(d => d.tier === 'Max').slice(0,2).map(item => (
                                                 <div key={item.id} className="glass-panel p-4 rounded-2xl flex gap-4 cursor-pointer hover:bg-white/60 transition" onClick={() => setSelectedItem(item)}>
-                                                    <img src={item.img} alt={item.nameTW} className="w-24 h-24 object-cover rounded-xl shadow-sm" />
+                                                    <img src={item.img} alt={item.nameTW} className="w-20 h-20 md:w-24 md:h-24 object-cover rounded-xl shadow-sm" />
                                                     <div className="flex-1 flex flex-col justify-center">
                                                         <TierBadge tier={item.tier} />
                                                         <h4 className="font-bold text-slate-800 mt-2 line-clamp-1">{item.nameTW}</h4>
@@ -500,8 +487,6 @@
 
                             {currentTab === 'gallery' && (
                                 <div className="space-y-6 animate-in fade-in duration-500">
-                                    
-                                    {/* ★ 修改：上方篩選與搜尋列 (增加了排序選單) */}
                                     <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 glass-panel p-4 rounded-2xl">
                                         <div className="relative w-full lg:w-72">
                                             <Icon name="search" size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-sky-500" />
@@ -525,10 +510,8 @@
                                                 ))}
                                             </div>
                                             
-                                            {/* 視覺分隔線 */}
                                             <div className="hidden lg:block w-px h-6 bg-slate-300/50"></div>
                                             
-                                            {/* ★ 新增：排序下拉選單 */}
                                             <div className="relative flex-shrink-0 w-full md:w-auto">
                                                 <div className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none">
                                                     <Icon name="sort" size={16} />
@@ -549,15 +532,14 @@
                                         </div>
                                     </div>
 
+                                    {}
                                     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
-                                        {/* ★ 修改：渲染的陣列改為 processedData */}
                                         {processedData.map(item => (
                                             <div key={item.id} className="glass-card rounded-2xl overflow-hidden cursor-pointer group flex flex-col" onClick={() => setSelectedItem(item)}>
                                                 <div className="relative aspect-square overflow-hidden bg-white/50">
                                                     <img src={item.img} alt={item.nameTW} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
                                                     <div className="absolute top-2 left-2"><TierBadge tier={item.tier} /></div>
                                                     
-                                                    {/* 收藏狀態標記 */}
                                                     <div className="absolute top-2 right-2 flex gap-1">
                                                         {collection.includes(item.id) && (
                                                             <div className="bg-sky-500 p-1.5 rounded-full shadow-md text-white">
@@ -571,18 +553,18 @@
                                                         )}
                                                     </div>
                                                 </div>
-                                                <div className="p-4 flex-1 flex flex-col">
+                                                <div className="p-3 md:p-4 flex-1 flex flex-col">
                                                     <p className="text-[10px] font-bold text-sky-600 mb-1 uppercase tracking-wider">{item.brand}</p>
-                                                    <h3 className="font-bold text-slate-800 text-sm leading-snug line-clamp-2 mb-2">{item.nameTW}</h3>
+                                                    <h3 className="font-bold text-slate-800 text-xs md:text-sm leading-snug line-clamp-2 mb-2">{item.nameTW}</h3>
                                                     <div className="mt-auto flex items-center justify-between pt-3 border-t border-slate-200/50">
                                                         <Stars count={item.rarity} />
-                                                        <span className="text-xs font-semibold text-slate-500">{item.type}</span>
+                                                        <span className="text-[10px] md:text-xs font-semibold text-slate-500">{item.type}</span>
                                                     </div>
                                                 </div>
                                             </div>
                                         ))}
                                     </div>
-                                    {/* ★ 修改：如果陣列為空 */}
+                                    
                                     {processedData.length === 0 && (
                                         <div className="text-center py-20 text-slate-500 font-medium glass-panel rounded-2xl">
                                             找不到符合條件的娃娃 🥲
@@ -591,17 +573,18 @@
                                 </div>
                             )}
 
+                            {}
                             {currentTab === 'collection' && (
                                 <div className="space-y-8 animate-in fade-in duration-500">
                                     <div className="glass-panel rounded-2xl p-6 md:p-8 flex flex-col md:flex-row items-center justify-between gap-6">
                                         <div>
-                                            <h2 className="text-2xl font-black text-slate-800">我的收藏</h2>
-                                            <p className="text-sm font-medium text-slate-500 mt-2">
+                                            <h2 className="text-xl md:text-2xl font-black text-slate-800">我的收藏</h2>
+                                            <p className="text-xs md:text-sm font-medium text-slate-500 mt-2">
                                                 目前已收集 {collection.length} 款 / 願望清單 {wishlist.length} 款
                                             </p>
                                         </div>
                                         <div className="w-full md:w-64 glass-card p-4 rounded-xl">
-                                            <div className="flex justify-between text-sm font-bold mb-2">
+                                            <div className="flex justify-between text-xs md:text-sm font-bold mb-2">
                                                 <span className="text-slate-600">圖鑑完成度</span>
                                                 <span className="text-sky-600">{Math.round((collection.length / plushData.length) * 100) || 0}%</span>
                                             </div>
@@ -623,10 +606,10 @@
                                                             <img src={item.img} alt={item.nameTW} className="w-full h-full object-cover" />
                                                             <div className="absolute top-2 left-2"><TierBadge tier={item.tier} /></div>
                                                         </div>
-                                                        <div className="p-3 text-sm font-bold text-slate-800 line-clamp-1">{item.nameTW}</div>
+                                                        <div className="p-3 text-xs md:text-sm font-bold text-slate-800 line-clamp-1">{item.nameTW}</div>
                                                     </div>
                                                 )) : 
-                                                <div className="col-span-full py-8 text-center text-slate-400 font-medium">尚未添加任何收藏。去圖鑑列表逛逛吧！</div>
+                                                <div className="col-span-full py-8 text-center text-sm text-slate-400 font-medium">尚未添加任何收藏。去圖鑑列表逛逛吧！</div>
                                             }
                                         </div>
                                     </div>
@@ -642,17 +625,16 @@
                                                         <div className="relative aspect-square bg-white/50 grayscale hover:grayscale-0 transition-all duration-300">
                                                             <img src={item.img} alt={item.nameTW} className="w-full h-full object-cover" />
                                                         </div>
-                                                        <div className="p-3 text-sm font-bold text-slate-800 line-clamp-1">{item.nameTW}</div>
+                                                        <div className="p-3 text-xs md:text-sm font-bold text-slate-800 line-clamp-1">{item.nameTW}</div>
                                                     </div>
                                                 )) : 
-                                                <div className="col-span-full py-8 text-center text-slate-400 font-medium">願望清單空空如也！</div>
+                                                <div className="col-span-full py-8 text-center text-sm text-slate-400 font-medium">願望清單空空如也！</div>
                                             }
                                         </div>
                                     </div>
                                 </div>
                             )}
                             
-                            {/* 免責聲明 Footer */}
                             <footer className="mt-12 pt-6 border-t border-white/60 text-center pb-4">
                                 <p className="text-[11px] md:text-xs text-slate-500 leading-relaxed max-w-4xl mx-auto font-medium">
                                     <strong>【免責聲明】</strong><br/>
@@ -663,7 +645,7 @@
                         </main>
                     </div>
 
-                    {/* 商品詳情 Modal 視窗 */}
+                    {}
                     {selectedItem && (
                         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 md:p-6 animate-in fade-in duration-200">
                             <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onClick={() => setSelectedItem(null)}></div>
@@ -675,22 +657,21 @@
                                     <Icon name="x" size={18} />
                                 </button>
 
-                                <div className="w-full md:w-2/5 relative bg-white/40 p-6 flex flex-col items-center justify-center border-r border-slate-200/60">
-                                    <img src={selectedItem.img} alt={selectedItem.nameTW} className="w-full max-w-[280px] aspect-square object-cover rounded-2xl shadow-md mix-blend-multiply" />
-                                    <div className="absolute top-6 left-6 flex gap-2">
+                                <div className="w-full md:w-2/5 relative bg-white/40 p-6 flex flex-col items-center justify-center border-b md:border-b-0 md:border-r border-slate-200/60 shrink-0">
+                                    <img src={selectedItem.img} alt={selectedItem.nameTW} className="w-[180px] md:w-full max-w-[280px] aspect-square object-cover rounded-2xl shadow-md mix-blend-multiply" />
+                                    <div className="absolute top-4 left-4 md:top-6 md:left-6 flex gap-2">
                                         <TierBadge tier={selectedItem.tier} />
                                     </div>
                                     
-                                    {/* Modal Actions */}
-                                    <div className="flex w-full gap-3 mt-8">
+                                    <div className="flex w-full gap-3 mt-6 md:mt-8">
                                         <button 
                                             onClick={() => toggleCollection(selectedItem.id)}
-                                            className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl font-bold text-sm transition-all ${collection.includes(selectedItem.id) ? 'bg-sky-500 text-white shadow-lg shadow-sky-500/40' : 'bg-white/60 text-slate-700 hover:bg-sky-50 hover:text-sky-600 border border-slate-200'}`}>
+                                            className={`flex-1 flex items-center justify-center gap-2 py-2 md:py-3 rounded-xl font-bold text-xs md:text-sm transition-all ${collection.includes(selectedItem.id) ? 'bg-sky-500 text-white shadow-lg shadow-sky-500/40' : 'bg-white/60 text-slate-700 hover:bg-sky-50 hover:text-sky-600 border border-slate-200'}`}>
                                             <Icon name="shield-check" size={18} /> {collection.includes(selectedItem.id) ? '已入庫' : '標記收藏'}
                                         </button>
                                         <button 
                                             onClick={() => toggleWishlist(selectedItem.id)}
-                                            className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl font-bold text-sm transition-all ${wishlist.includes(selectedItem.id) ? 'bg-pink-500 text-white shadow-lg shadow-pink-500/40' : 'bg-white/60 text-slate-700 hover:bg-pink-50 hover:text-pink-600 border border-slate-200'}`}>
+                                            className={`flex-1 flex items-center justify-center gap-2 py-2 md:py-3 rounded-xl font-bold text-xs md:text-sm transition-all ${wishlist.includes(selectedItem.id) ? 'bg-pink-500 text-white shadow-lg shadow-pink-500/40' : 'bg-white/60 text-slate-700 hover:bg-pink-50 hover:text-pink-600 border border-slate-200'}`}>
                                             <Icon name="heart" size={18} fill={wishlist.includes(selectedItem.id) ? "currentColor" : "none"} /> 想收
                                         </button>
                                     </div>
@@ -698,43 +679,43 @@
 
                                 <div className="flex-1 p-6 md:p-8 overflow-y-auto hide-scrollbar">
                                     <div className="mb-6">
-                                        <p className="text-xs font-bold text-sky-600 mb-2">{selectedItem.brand} · {selectedItem.type}</p>
-                                        <h2 className="text-2xl font-black text-slate-800 leading-tight">{selectedItem.nameTW}</h2>
-                                        <p className="text-sm font-medium text-slate-500 mt-1">{selectedItem.nameJP}</p>
+                                        <p className="text-[10px] md:text-xs font-bold text-sky-600 mb-2">{selectedItem.brand} · {selectedItem.type}</p>
+                                        <h2 className="text-xl md:text-2xl font-black text-slate-800 leading-tight">{selectedItem.nameTW}</h2>
+                                        <p className="text-xs md:text-sm font-medium text-slate-500 mt-1">{selectedItem.nameJP}</p>
                                     </div>
 
-                                    <div className="grid grid-cols-2 gap-4 mb-8">
-                                        <div className="glass-card p-4 rounded-2xl">
+                                    <div className="grid grid-cols-2 gap-3 md:gap-4 mb-6 md:mb-8">
+                                        <div className="glass-card p-3 md:p-4 rounded-xl md:rounded-2xl">
                                             <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">日本二手行情</p>
-                                            <p className="text-lg font-black text-slate-800">{selectedItem.marketPrice}</p>
+                                            <p className="text-base md:text-lg font-black text-slate-800">{selectedItem.marketPrice}</p>
                                         </div>
-                                        <div className="glass-card p-4 rounded-2xl">
+                                        <div className="glass-card p-3 md:p-4 rounded-xl md:rounded-2xl">
                                             <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">發售資訊</p>
-                                            <p className="text-sm font-bold text-slate-800">{selectedItem.releaseDate} / {selectedItem.price}</p>
+                                            <p className="text-xs md:text-sm font-bold text-slate-800">{selectedItem.releaseDate} / {selectedItem.price}</p>
                                         </div>
                                     </div>
 
                                     <div className="space-y-6">
                                         <div>
-                                            <h3 className="text-sm font-bold text-slate-800 mb-3 flex items-center gap-2 border-b border-slate-200/60 pb-2">
+                                            <h3 className="text-xs md:text-sm font-bold text-slate-800 mb-3 flex items-center gap-2 border-b border-slate-200/60 pb-2">
                                                 <Icon name="tag" size={16} className="text-sky-500" /> 五夏關係與評價
                                             </h3>
-                                            <div className="grid grid-cols-2 gap-y-3 gap-x-4 text-sm">
+                                            <div className="grid grid-cols-2 gap-y-3 gap-x-4 text-xs md:text-sm">
                                                 <div className="text-slate-500">所屬企劃</div>
                                                 <div className="font-bold text-slate-800">{selectedItem.series}</div>
                                                 <div className="text-slate-500">入手難易度</div>
                                                 <div className="flex items-center gap-2"><Stars count={selectedItem.rarity} /></div>
-                                                <div className="col-span-2 mt-2 p-3 bg-blue-50/50 rounded-xl text-sm leading-relaxed text-slate-700 border border-blue-100/50">
+                                                <div className="col-span-2 mt-2 p-3 bg-blue-50/50 rounded-xl text-xs md:text-sm leading-relaxed text-slate-700 border border-blue-100/50">
                                                     <span className="font-bold text-blue-800 mr-2">短評:</span>{selectedItem.comment}
                                                 </div>
                                             </div>
                                         </div>
 
                                         <div>
-                                            <h3 className="text-sm font-bold text-slate-800 mb-3 flex items-center gap-2 border-b border-slate-200/60 pb-2">
+                                            <h3 className="text-xs md:text-sm font-bold text-slate-800 mb-3 flex items-center gap-2 border-b border-slate-200/60 pb-2">
                                                 <Icon name="shield-check" size={16} className="text-emerald-500" /> 正版辨識指南
                                             </h3>
-                                            <ul className="space-y-2 text-sm text-slate-700">
+                                            <ul className="space-y-2 text-xs md:text-sm text-slate-700">
                                                 {selectedItem.authCheck.map((check, i) => (
                                                     <li key={i} className="flex items-start gap-2">
                                                         <span className="text-emerald-500 font-bold mt-0.5">✓</span> {check}

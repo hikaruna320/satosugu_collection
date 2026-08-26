@@ -365,7 +365,7 @@
                 };
                 return (
                     <span className={`px-2.5 py-1 rounded-full text-xs font-black tracking-wider ${colors[tier]}`}>
-                        相關性：{tier} 
+                        五夏濃度 {tier} 
                     </span>
                 );
             };
@@ -505,7 +505,7 @@
                                                         key={tier}
                                                         onClick={() => setFilterTier(tier)}
                                                         className={`px-4 py-2 rounded-xl text-sm font-bold flex-shrink-0 transition-all ${filterTier === tier ? 'bg-sky-500 text-white shadow-md shadow-sky-500/30' : 'glass-card text-slate-600 hover:text-sky-600'}`}>
-                                                        {tier === 'All' ? '五夏濃度' : `${tier} `}
+                                                        {tier === 'All' ? '五夏濃度：' : `${tier} `}
                                                     </button>
                                                 ))}
                                             </div>
@@ -523,7 +523,7 @@
                                                 >
                                                     <option value="newest">新增日期 (新到舊)</option>
                                                     <option value="tier">五夏濃度 (高到低)</option>
-                                                    <option value="rarity">入手難易度 (高到低)</option>
+                                                    <option value="rarity">稀有度 (高到低)</option>
                                                 </select>
                                                 <div className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none">
                                                     <Icon name="chevron-down" size={16} />
@@ -703,7 +703,7 @@
                                             <div className="grid grid-cols-2 gap-y-3 gap-x-4 text-xs md:text-sm">
                                                 <div className="text-slate-500">所屬企劃</div>
                                                 <div className="font-bold text-slate-800">{selectedItem.series}</div>
-                                                <div className="text-slate-500">入手難易度</div>
+                                                <div className="text-slate-500">稀有度</div>
                                                 <div className="flex items-center gap-2"><Stars count={selectedItem.rarity} /></div>
                                                 <div className="col-span-2 mt-2 p-3 bg-blue-50/50 rounded-xl text-xs md:text-sm leading-relaxed text-slate-700 border border-blue-100/50">
                                                     <span className="font-bold text-blue-800 mr-2">短評:</span>{selectedItem.comment}

@@ -298,15 +298,15 @@
             },
             {
                 id: 'plush-013',
-                tier: 'Max',
-                nameJP: '呪術廻戦 ジロリマスコット 懐玉・玉折 五条悟',
+                tier: 'High',
+                nameJP: '呪術廻戦 ジロリぬいぐるみ 懐玉・玉折 五条悟',
                 nameTW: '厭世娃 高專五條',
                 type: 'マスコット',
                 brand: '中外鉱業 (Chugai Mining)',
                 releaseDate: '2023/11',
-                price: '¥990',
-                marketPrice: '¥1,500～¥2,200',
-                twPrice: 'NT$350～NT$500',
+                price: '¥2,420',
+                marketPrice: '¥2,500～¥3,500',
+                twPrice: 'NT$530～NT$750',
                 rarity: 3,
                 satoGojo: true,
                 suguruGeto: false,
@@ -317,16 +317,16 @@
             },
             {
                 id: 'plush-014',
-                tier: 'Max',
-                nameJP: '呪術廻戦 ジロリマスコット 懐玉・玉折 夏油傑',
+                tier: 'High',
+                nameJP: '呪術廻戦 ジロリぬいぐるみ 懐玉・玉折 夏油傑',
                 nameTW: '厭世娃 高專夏油',
                 type: 'マスコット',
                 brand: '中外鉱業 (Chugai Mining)',
                 releaseDate: '2023/11',
-                price: '¥990',
-                marketPrice: '¥1,800～¥2,500',
-                twPrice: 'NT$400～NT$600',
-                rarity: 3,
+                price: '¥2,420',
+                marketPrice: '¥2,500～¥3,500',
+                twPrice: 'NT$530～NT$750',
+                rarity: 4,
                 satoGojo: false,
                 suguruGeto: true,
                 series: '高専時代',
@@ -336,15 +336,15 @@
             },
             {
                 id: 'plush-015',
-                tier: 'Max',
-                nameJP: '劇場版 呪術廻戦 0 ジロリマスコット 五条悟',
+                tier: 'High',
+                nameJP: '劇場版 呪術廻戦 0 ジロリぬいぐるみ 五条悟',
                 nameTW: '厭世娃 教師五條',
                 type: 'マスコット',
                 brand: '中外鉱業 (Chugai Mining)',
                 releaseDate: '2022/05',
-                price: '¥990',
-                marketPrice: '¥1,200～¥1,800',
-                twPrice: 'NT$300～NT$450',
+                price: '¥2,420',
+                marketPrice: '¥2,500～¥3,500',
+                twPrice: 'NT$530～NT$750',
                 rarity: 3,
                 satoGojo: true,
                 suguruGeto: false,
@@ -355,22 +355,22 @@
             },
             {
                 id: 'plush-016',
-                tier: 'Max',
-                nameJP: '劇場版 呪術廻戦 0 ジロリマスコット 夏油傑',
+                tier: 'High',
+                nameJP: '劇場版 呪術廻戦 0 ジロリぬいぐるみ 夏油傑',
                 nameTW: '厭世娃 教祖夏油 (袈裟)',
                 type: 'マスコット',
                 brand: '中外鉱業 (Chugai Mining)',
                 releaseDate: '2022/05',
-                price: '¥990',
-                marketPrice: '¥1,500～¥2,500',
-                twPrice: 'NT$350～NT$550',
+                price: '¥2,420',
+                marketPrice: '¥2,500～¥3,500',
+                twPrice: 'NT$530～NT$750',
                 rarity: 4,
                 satoGojo: false,
                 suguruGeto: true,
                 series: '劇場版0',
                 authCheck: ['確認中外鉱業正版吊牌', '袈裟上的格紋印刷與布料剪裁'],
                 comment: '穿著教祖袈裟的夏油傑，搭配厭世神態充滿了教祖大人的無奈感，這款在二手市場的流通率稍微低一些。',
-                img: 'plush-015_厭世娃 教師五條.jpg'
+                img: 'plush-016_厭世娃 教祖夏油 (袈裟).jpg'
             },
             {
                 id: 'plush-017',
@@ -872,11 +872,11 @@
                                     <div className="grid grid-cols-2 gap-3 md:gap-4 mb-6 md:mb-8">
                                         <div className="glass-card p-3 md:p-4 rounded-xl md:rounded-2xl">
                                             <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">日本二手行情</p>
-                                            <p className="text-base md:text-lg font-black text-slate-800">{selectedItem.marketPrice}</p>
+                                            <p className="text-xs md:text-sm font-bold text-slate-800">{selectedItem.marketPrice} ({selectedItem.twPrice})</p>
                                         </div>
                                         <div className="glass-card p-3 md:p-4 rounded-xl md:rounded-2xl">
                                             <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">初販日期 | 官方定價</p>
-                                            <p className="text-xs md:text-sm font-bold text-slate-800">{selectedItem.releaseDate} |  {selectedItem.price}</p>
+                                            <p className="text-xs md:text-sm font-bold text-slate-800">{selectedItem.releaseDate} | {selectedItem.price}</p>
                                         </div>
                                     </div>
 

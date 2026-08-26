@@ -598,7 +598,7 @@
                                     <button 
                                         onClick={() => setCurrentTab('dashboard')}
                                         className={`flex-shrink-0 flex items-center gap-2 md:gap-3 px-4 py-3 rounded-xl transition-all duration-300 font-bold text-sm ${currentTab === 'dashboard' ? 'bg-sky-500 text-white shadow-md shadow-sky-500/30' : 'text-slate-600 hover:bg-white/60 hover:text-sky-600'}`}>
-                                        <Icon name="layout-dashboard" size={20} className={currentTab === 'dashboard' ? "text-white" : "text-sky-500"} /> 總覽
+                                        <Icon name="layout-dashboard" size={20} className={currentTab === 'dashboard' ? "text-white" : "text-sky-500"} /> 回到首頁
                                     </button>
                                     <button 
                                         onClick={() => setCurrentTab('gallery')}
@@ -636,13 +636,13 @@
                                 <div className="space-y-8 animate-in fade-in duration-500">
                                     <h2 className="text-xl md:text-2xl font-black text-slate-800 flex items-center gap-2">
                                         <span className="w-1.5 h-6 bg-sky-500 rounded-full"></span>
-                                        資料庫總覽
+                                        首頁
                                     </h2>
                                     
                                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                                         {[
                                             { label: '收錄總數', value: plushData.length, color: 'text-sky-600' },
-                                            { label: '雙人商品', value: plushData.filter(d => d.tier === 'Max').length, color: 'text-amber-500' },
+                                            { label: '組合商品', value: plushData.filter(d => d.satoGojo === true && d.suguruGeto === true).length, color: 'text-amber-500' },
                                             { label: '五條悟商品', value: plushData.filter(d => d.satoGojo).length, color: 'text-blue-500' },
                                             { label: '夏油傑商品', value: plushData.filter(d => d.suguruGeto).length, color: 'text-indigo-500' }
                                         ].map((stat, i) => (

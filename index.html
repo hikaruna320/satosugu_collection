@@ -502,7 +502,6 @@
                 const saved = localStorage.getItem('satoSuguWishlist_v2');
                 return saved ? JSON.parse(saved) : [];
             });
-            // 新增：儲存各款商品的購入金額
             const [purchasePrices, setPurchasePrices] = useState(() => {
                 const saved = localStorage.getItem('satoSuguPurchasePrices_v2');
                 return saved ? JSON.parse(saved) : {};
@@ -532,6 +531,19 @@
                 }
             };
 
+            // 輔助函式：解析日期字串進行排序
+            const getSortableDate = (dateString) => {
+                if (!dateString) return 0;
+                // 擷取 YYYY 或 YYYY/MM 格式，將未確認等字串排除
+                const match = dateString.match(/(\d{4})(?:\/(\d{1,2}))?/);
+                if (match) {
+                    const year = parseInt(match[1]);
+                    const month = match[2] ? parseInt(match[2]) : 0; // 若無月份則為 0
+                    return year * 100 + month;
+                }
+                return 0; // 遇到「未確認」、「受注生產」等將會排在最後
+            };
+
             const processedData = plushData
                 .filter(item => {
                     const matchSearch = item.nameJP.toLowerCase().includes(searchQuery.toLowerCase()) || 
@@ -547,7 +559,15 @@
                         return tierWeight[b.tier] - tierWeight[a.tier];
                     } else if (sortBy === 'rarity') {
                         return b.rarity - a.rarity;
+                    } else if (sortBy === 'releaseDate') {
+                        // 初販日期 (新到舊)
+                        const dateA = getSortableDate(a.releaseDate);
+                        const dateB = getSortableDate(b.releaseDate);
+                        if (dateA !== dateB) return dateB - dateA;
+                        // 日期相同或無法解析，則以 ID 排列
+                        return b.id.localeCompare(a.id);
                     } else {
+                        // 預設 newest: 新增日期 (新到舊) -> ID由大到小
                         return b.id.localeCompare(a.id);
                     }
                 });
@@ -598,6 +618,7 @@
                             src="image_header.jpg" 
                             alt="懷玉・玉折" 
                             className="w-full h-full object-cover"
+                            onError={(e) => { e.target.src = 'https://placehold.co/1200x400/0ea5e9/ffffff?text=Jujutsu+Kaisen' }}
                         />
                         <div className="absolute inset-0 bg-gradient-to-t from-sky-900/40 to-transparent"></div>
                         <div className="absolute bottom-4 left-4 md:bottom-6 md:left-12 flex items-center gap-4">
@@ -655,6 +676,7 @@
 
                         <main className="flex-1 p-6 md:p-8 overflow-y-auto hide-scrollbar">
                             
+                            {}
                             {currentTab === 'dashboard' && (
                                 <div className="space-y-8 animate-in fade-in duration-500">
                                     <h2 className="text-xl md:text-2xl font-black text-slate-800 flex items-center gap-2">
@@ -681,7 +703,12 @@
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
                                             {plushData.slice(-2).reverse().map(item => (
                                                 <div key={item.id} className="glass-panel p-4 rounded-2xl flex gap-4 cursor-pointer hover:bg-white/60 transition" onClick={() => setSelectedItem(item)}>
-                                                    <img src={item.img} alt={item.nameTW} className="w-20 h-20 md:w-24 md:h-24 object-cover rounded-xl shadow-sm" />
+                                                    <img 
+                                                        src={item.img} 
+                                                        alt={item.nameTW} 
+                                                        className="w-20 h-20 md:w-24 md:h-24 object-cover rounded-xl shadow-sm"
+                                                        onError={(e) => { e.target.src = 'https://placehold.co/100x100/f1f5f9/94a3b8?text=Image' }}
+                                                    />
                                                     <div className="flex-1 flex flex-col justify-center">
                                                         <TierBadge tier={item.tier} />
                                                         <h4 className="font-bold text-slate-800 mt-2 line-clamp-1">{item.nameTW}</h4>
@@ -694,6 +721,7 @@
                                 </div>
                             )}
 
+                            {}
                             {currentTab === 'gallery' && (
                                 <div className="space-y-6 animate-in fade-in duration-500">
                                     <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 glass-panel p-4 rounded-2xl">
@@ -753,6 +781,8 @@
                                                         className="custom-select w-full md:w-auto pl-9 pr-10 py-2.5 bg-white/70 backdrop-blur-sm border border-white/80 rounded-xl text-sm font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-sky-400 hover:bg-white cursor-pointer transition-all shadow-sm"
                                                     >
                                                         <option value="newest">新增日期 (新到舊)</option>
+                                                        {/* 新增了初販日期排序選項 */}
+                                                        <option value="releaseDate">初販日期 (新到舊)</option>
                                                         <option value="tier">五夏濃度 (高到低)</option>
                                                         <option value="rarity">稀有度 (高到低)</option>
                                                     </select>
@@ -770,7 +800,12 @@
                                         {processedData.map(item => (
                                             <div key={item.id} className="glass-card rounded-2xl overflow-hidden cursor-pointer group flex flex-col" onClick={() => setSelectedItem(item)}>
                                                 <div className="relative aspect-square overflow-hidden bg-white/50">
-                                                    <img src={item.img} alt={item.nameTW} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                                                    <img 
+                                                        src={item.img} 
+                                                        alt={item.nameTW} 
+                                                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" 
+                                                        onError={(e) => { e.target.src = 'https://placehold.co/200x200/f1f5f9/94a3b8?text=Image' }}
+                                                    />
                                                     
                                                     <div className="absolute top-2 right-2 flex gap-1">
                                                         {collection.includes(item.id) && (
@@ -811,6 +846,7 @@
                                 </div>
                             )}
 
+                            {}
                             {currentTab === 'collection' && (
                                 <div className="space-y-8 animate-in fade-in duration-500">
                                     <div className="glass-panel rounded-2xl p-6 md:p-8 flex flex-col md:flex-row items-center justify-between gap-6">
@@ -821,7 +857,6 @@
                                             </p>
                                         </div>
                                         
-                                        {/* 新版：替換為「總投資金額」 */}
                                         <div className="w-full md:w-64 glass-card p-4 md:p-5 rounded-xl border border-sky-100 bg-white/70">
                                             <div className="flex flex-col">
                                                 <span className="text-xs md:text-sm font-bold text-slate-500 mb-1">總投資金額</span>
@@ -847,7 +882,12 @@
                                                 plushData.filter(item => collection.includes(item.id)).map(item => (
                                                     <div key={item.id} className="glass-card rounded-2xl overflow-hidden cursor-pointer flex flex-col" onClick={() => setSelectedItem(item)}>
                                                         <div className="relative aspect-square bg-white/50">
-                                                            <img src={item.img} alt={item.nameTW} className="w-full h-full object-cover" />
+                                                            <img 
+                                                                src={item.img} 
+                                                                alt={item.nameTW} 
+                                                                className="w-full h-full object-cover" 
+                                                                onError={(e) => { e.target.src = 'https://placehold.co/150x150/f1f5f9/94a3b8?text=Image' }}
+                                                            />
                                                             <div className="absolute top-2 left-2"><TierBadge tier={item.tier} /></div>
                                                         </div>
                                                         <div className="p-3 text-xs md:text-sm font-bold text-slate-800 line-clamp-1">{item.nameTW}</div>
@@ -867,7 +907,12 @@
                                                 plushData.filter(item => wishlist.includes(item.id)).map(item => (
                                                     <div key={item.id} className="glass-card rounded-2xl overflow-hidden cursor-pointer flex flex-col" onClick={() => setSelectedItem(item)}>
                                                         <div className="relative aspect-square bg-white/50 transition-all duration-300">
-                                                            <img src={item.img} alt={item.nameTW} className="w-full h-full object-cover" />
+                                                            <img 
+                                                                src={item.img} 
+                                                                alt={item.nameTW} 
+                                                                className="w-full h-full object-cover" 
+                                                                onError={(e) => { e.target.src = 'https://placehold.co/150x150/f1f5f9/94a3b8?text=Image' }}
+                                                            />
                                                             <div className="absolute top-2 left-2"><TierBadge tier={item.tier} /></div>
                                                         </div>
                                                         <div className="p-3 text-xs md:text-sm font-bold text-slate-800 line-clamp-1">{item.nameTW}</div>
@@ -890,6 +935,7 @@
                         </main>
                     </div>
 
+                    {}
                     {selectedItem && (
                         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 md:p-6 animate-in fade-in duration-200">
                             <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onClick={() => setSelectedItem(null)}></div>
@@ -902,7 +948,12 @@
                                 </button>
 
                                 <div className="w-full md:w-2/5 relative bg-white/40 p-6 flex flex-col items-center justify-center border-b md:border-b-0 md:border-r border-slate-200/60 shrink-0">
-                                    <img src={selectedItem.img} alt={selectedItem.nameTW} className="w-[180px] md:w-full max-w-[280px] aspect-square object-cover rounded-2xl shadow-md mix-blend-multiply" />
+                                    <img 
+                                        src={selectedItem.img} 
+                                        alt={selectedItem.nameTW} 
+                                        className="w-[180px] md:w-full max-w-[280px] aspect-square object-cover rounded-2xl shadow-md mix-blend-multiply" 
+                                        onError={(e) => { e.target.src = 'https://placehold.co/400x400/f1f5f9/94a3b8?text=Image' }}
+                                    />
                                     <div className="absolute top-4 left-4 md:top-6 md:left-6 flex gap-2">
                                         <TierBadge tier={selectedItem.tier} />
                                     </div>
@@ -947,7 +998,6 @@
                                         </div>
                                     </div>
 
-                                    {/* 新版：購入金額輸入區域 */}
                                     <div className="mb-6 md:mb-8 glass-card p-3 md:p-4 rounded-xl md:rounded-2xl border border-sky-200/60 bg-sky-50/30 flex flex-col md:flex-row md:items-center justify-between gap-3">
                                         <div className="flex items-center gap-3">
                                             <div className="bg-white p-2 rounded-lg text-sky-500 shadow-sm">

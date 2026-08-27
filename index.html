@@ -3,13 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>五夏娃全圖鑑【非公式】</title>
+    <title>五夏娃圖鑑【非公式】</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    
+
     <style>
         body { font-family: 'Inter', sans-serif; background-color: #e0f2fe; }
         .hide-scrollbar::-webkit-scrollbar { display: none; }
@@ -48,6 +48,8 @@
 
         const Icon = ({ name, size = 24, className = "", fill = "none" }) => {
             const icons = {
+                // 原本的 layout-dashboard 和 grid 一樣，為版本更新新增了 bell 圖示
+                'bell': <><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9" /><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0" /></>,
                 'layout-dashboard': <path d="M3 3h7v7H3z M14 3h7v7h-7z M14 14h7v7h-7z M3 14h7v7H3z" />,
                 'grid': <path d="M3 3h7v7H3z M14 3h7v7h-7z M14 14h7v7h-7z M3 14h7v7H3z" />,
                 'library': <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20" />,
@@ -487,13 +489,14 @@
         const allCategories = ['All', ...new Set(plushData.map(item => item.category))];
 
         const App = () => {
-            const [currentTab, setCurrentTab] = useState('dashboard');
+            // 已將預設分頁改為 'gallery' (圖鑑列表)
+            const [currentTab, setCurrentTab] = useState('gallery');
             const [searchQuery, setSearchQuery] = useState('');
             const [filterCategory, setFilterCategory] = useState('All');
             const [uncollectedOnly, setUncollectedOnly] = useState(false);
             const [selectedItem, setSelectedItem] = useState(null);
             const [sortBy, setSortBy] = useState('newest'); 
-            
+
             const [collection, setCollection] = useState(() => {
                 const saved = localStorage.getItem('satoSuguCollection_v2');
                 return saved ? JSON.parse(saved) : [];
@@ -534,14 +537,13 @@
             // 輔助函式：解析日期字串進行排序
             const getSortableDate = (dateString) => {
                 if (!dateString) return 0;
-                // 擷取 YYYY 或 YYYY/MM 格式，將未確認等字串排除
                 const match = dateString.match(/(\d{4})(?:\/(\d{1,2}))?/);
                 if (match) {
                     const year = parseInt(match[1]);
-                    const month = match[2] ? parseInt(match[2]) : 0; // 若無月份則為 0
+                    const month = match[2] ? parseInt(match[2]) : 0; 
                     return year * 100 + month;
                 }
-                return 0; // 遇到「未確認」、「受注生產」等將會排在最後
+                return 0; 
             };
 
             const processedData = plushData
@@ -560,14 +562,11 @@
                     } else if (sortBy === 'rarity') {
                         return b.rarity - a.rarity;
                     } else if (sortBy === 'releaseDate') {
-                        // 初販日期 (新到舊)
                         const dateA = getSortableDate(a.releaseDate);
                         const dateB = getSortableDate(b.releaseDate);
                         if (dateA !== dateB) return dateB - dateA;
-                        // 日期相同或無法解析，則以 ID 排列
                         return b.id.localeCompare(a.id);
                     } else {
-                        // 預設 newest: 新增日期 (新到舊) -> ID由大到小
                         return b.id.localeCompare(a.id);
                     }
                 });
@@ -579,7 +578,7 @@
                     'Medium': 'bg-sky-100 text-sky-700 border border-sky-200',
                     'low': 'bg-slate-100 text-slate-600 border border-slate-200'
                 };
-                
+
                 const hashtagColors = {
                     'Max': 'text-orange-500',
                     'High': 'text-blue-600',
@@ -612,7 +611,7 @@
 
             return (
                 <div className="min-h-screen bg-gradient-to-br from-sky-100 via-white to-blue-100 flex flex-col font-sans text-slate-800 selection:bg-sky-200">
-                    
+
                     <header className="w-full h-[180px] sm:h-[220px] md:h-[350px] relative overflow-hidden flex-shrink-0 z-10 shadow-[0_4px_20px_rgba(14,165,233,0.1)] transition-all duration-300">
                         <img 
                             src="image_header.jpg" 
@@ -624,7 +623,7 @@
                         <div className="absolute bottom-4 left-4 md:bottom-6 md:left-12 flex items-center gap-4">
                             <div className="glass-panel px-4 py-2 md:px-6 md:py-3 rounded-xl md:rounded-2xl">
                                 <h1 className="text-xl md:text-3xl font-black text-white drop-shadow-md tracking-wide">
-                                    五夏娃全圖鑑【非公式】
+                                    五夏娃圖鑑【非公式】
                                 </h1>
                                 <p className="text-sky-100 text-xs md:text-sm font-medium mt-1 drop-shadow">
                                     Gojo Satoru x Geto Suguru
@@ -634,16 +633,12 @@
                     </header>
 
                     <div className="flex-1 flex flex-col md:flex-row relative z-20 -mt-2">
-                        
+
                         {/* 左側選單欄 */}
                         <aside className="w-full md:w-64 glass-panel border-t-0 md:border-t md:border-r border-white/60 flex-shrink-0 flex flex-col rounded-tr-3xl md:rounded-tr-none z-20">
                             <div className="p-4 md:p-8">
                                 <nav className="flex flex-row md:flex-col gap-2 md:gap-3 overflow-x-auto hide-scrollbar">
-                                    <button 
-                                        onClick={() => setCurrentTab('dashboard')}
-                                        className={`flex-shrink-0 flex items-center gap-2 md:gap-3 px-4 py-3 rounded-xl transition-all duration-300 font-bold text-sm ${currentTab === 'dashboard' ? 'bg-sky-500 text-white shadow-md shadow-sky-500/30' : 'text-slate-600 hover:bg-white/60 hover:text-sky-600'}`}>
-                                        <Icon name="layout-dashboard" size={20} className={currentTab === 'dashboard' ? "text-white" : "text-sky-500"} /> 回首頁
-                                    </button>
+                                    {/* 按鈕順序已更新：圖鑑列表 -> 我的收藏 -> 版本更新 */}
                                     <button 
                                         onClick={() => setCurrentTab('gallery')}
                                         className={`flex-shrink-0 flex items-center gap-2 md:gap-3 px-4 py-3 rounded-xl transition-all duration-300 font-bold text-sm ${currentTab === 'gallery' ? 'bg-sky-500 text-white shadow-md shadow-sky-500/30' : 'text-slate-600 hover:bg-white/60 hover:text-sky-600'}`}>
@@ -654,9 +649,14 @@
                                         className={`flex-shrink-0 flex items-center gap-2 md:gap-3 px-4 py-3 rounded-xl transition-all duration-300 font-bold text-sm ${currentTab === 'collection' ? 'bg-sky-500 text-white shadow-md shadow-sky-500/30' : 'text-slate-600 hover:bg-white/60 hover:text-sky-600'}`}>
                                         <Icon name="library" size={20} className={currentTab === 'collection' ? "text-white" : "text-sky-500"} /> 我的收藏
                                     </button>
+                                    <button 
+                                        onClick={() => setCurrentTab('dashboard')}
+                                        className={`flex-shrink-0 flex items-center gap-2 md:gap-3 px-4 py-3 rounded-xl transition-all duration-300 font-bold text-sm ${currentTab === 'dashboard' ? 'bg-sky-500 text-white shadow-md shadow-sky-500/30' : 'text-slate-600 hover:bg-white/60 hover:text-sky-600'}`}>
+                                        <Icon name="bell" size={20} className={currentTab === 'dashboard' ? "text-white" : "text-sky-500"} /> 版本更新
+                                    </button>
                                 </nav>
                             </div>
-                            
+
                             <div className="p-6 hidden md:block mt-auto border-t border-white/40">
                                 <div className="glass-card rounded-2xl p-4">
                                     <p className="text-xs font-semibold text-slate-500 mb-2 uppercase tracking-wider">個人收藏進度</p>
@@ -675,15 +675,15 @@
                         </aside>
 
                         <main className="flex-1 p-6 md:p-8 overflow-y-auto hide-scrollbar">
-                            
+
                             {}
                             {currentTab === 'dashboard' && (
                                 <div className="space-y-8 animate-in fade-in duration-500">
                                     <h2 className="text-xl md:text-2xl font-black text-slate-800 flex items-center gap-2">
                                         <span className="w-1.5 h-6 bg-sky-500 rounded-full"></span>
-                                        首頁總覽
+                                        版本更新總覽
                                     </h2>
-                                    
+
                                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                                         {[
                                             { label: '收錄總數', value: plushData.length, color: 'text-sky-600' },
@@ -736,7 +736,7 @@
                                             />
                                         </div>
                                         <div className="flex flex-col md:flex-row flex-wrap items-stretch md:items-center gap-3 w-full lg:w-auto">
-                                            
+
                                             {/* 未收藏篩選 Checkbox */}
                                             <label className="flex items-center justify-center md:justify-start gap-2 cursor-pointer glass-card px-4 py-2.5 rounded-xl text-sm font-bold text-slate-700 hover:text-sky-600 transition-all shadow-sm w-full md:w-auto">
                                                 <input 
@@ -767,9 +767,9 @@
                                                         <Icon name="chevron-down" size={16} />
                                                     </div>
                                                 </div>
-                                                
+
                                                 <div className="hidden lg:block w-px h-6 bg-slate-300/50 my-auto"></div>
-                                                
+
                                                 {/* 排序下拉選單 */}
                                                 <div className="relative flex-1 md:w-auto">
                                                     <div className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none">
@@ -781,7 +781,6 @@
                                                         className="custom-select w-full md:w-auto pl-9 pr-10 py-2.5 bg-white/70 backdrop-blur-sm border border-white/80 rounded-xl text-sm font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-sky-400 hover:bg-white cursor-pointer transition-all shadow-sm"
                                                     >
                                                         <option value="newest">新增日期 (新到舊)</option>
-                                                        {/* 新增了初販日期排序選項 */}
                                                         <option value="releaseDate">初販日期 (新到舊)</option>
                                                         <option value="tier">五夏濃度 (高到低)</option>
                                                         <option value="rarity">稀有度 (高到低)</option>
@@ -806,7 +805,7 @@
                                                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" 
                                                         onError={(e) => { e.target.src = 'https://placehold.co/200x200/f1f5f9/94a3b8?text=Image' }}
                                                     />
-                                                    
+
                                                     <div className="absolute top-2 right-2 flex gap-1">
                                                         {collection.includes(item.id) && (
                                                             <div className="bg-sky-500 p-1.5 rounded-full shadow-md text-white">
@@ -823,7 +822,7 @@
                                                 <div className="p-3 md:p-4 flex-1 flex flex-col">
                                                     <p className="text-[10px] font-bold text-sky-600 mb-1 uppercase tracking-wider">{item.brand}</p>
                                                     <h3 className="font-bold text-slate-800 text-xs md:text-sm leading-snug line-clamp-2 mb-2">{item.nameTW}</h3>
-                                                    
+
                                                     <div className="mt-auto flex flex-col gap-1.5 pt-3 border-t border-slate-200/50">
                                                         <div className="flex items-center justify-between">
                                                             <Stars count={item.rarity} />
@@ -837,7 +836,7 @@
                                             </div>
                                         ))}
                                     </div>
-                                    
+
                                     {processedData.length === 0 && (
                                         <div className="text-center py-20 text-slate-500 font-medium glass-panel rounded-2xl">
                                             找不到符合條件的娃娃 🥲
@@ -856,7 +855,7 @@
                                                 目前已收集 {collection.length} 款 / 願望清單 {wishlist.length} 款
                                             </p>
                                         </div>
-                                        
+
                                         <div className="w-full md:w-64 glass-card p-4 md:p-5 rounded-xl border border-sky-100 bg-white/70">
                                             <div className="flex flex-col">
                                                 <span className="text-xs md:text-sm font-bold text-slate-500 mb-1">總投資金額</span>
@@ -897,7 +896,7 @@
                                             }
                                         </div>
                                     </div>
-                                    
+
                                     <div className="pt-4 border-t border-slate-200/50">
                                         <h3 className="text-lg font-bold text-slate-700 mb-4 flex items-center gap-2">
                                             <Icon name="heart" size={20} className="text-pink-500" /> 願望清單
@@ -924,7 +923,8 @@
                                     </div>
                                 </div>
                             )}
-                            
+
+                            {}
                             <footer className="mt-12 pt-6 border-t border-white/60 text-center pb-4">
                                 <p className="text-[11px] md:text-xs text-slate-500 leading-relaxed max-w-4xl mx-auto font-medium">
                                     <strong>【免責聲明】</strong><br/>
@@ -935,12 +935,11 @@
                         </main>
                     </div>
 
-                    {}
                     {selectedItem && (
                         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 md:p-6 animate-in fade-in duration-200">
                             <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onClick={() => setSelectedItem(null)}></div>
                             <div className="relative w-full max-w-4xl max-h-[90vh] glass-panel rounded-3xl overflow-hidden shadow-2xl flex flex-col md:flex-row bg-white/90">
-                                
+
                                 <button 
                                     onClick={() => setSelectedItem(null)}
                                     className="absolute top-4 right-4 z-10 w-8 h-8 flex items-center justify-center rounded-full bg-white/50 hover:bg-white text-slate-600 transition-colors backdrop-blur-md border border-slate-200">
@@ -957,7 +956,7 @@
                                     <div className="absolute top-4 left-4 md:top-6 md:left-6 flex gap-2">
                                         <TierBadge tier={selectedItem.tier} />
                                     </div>
-                                    
+
                                     <div className="flex w-full gap-3 mt-6 md:mt-8">
                                         <button 
                                             onClick={() => toggleCollection(selectedItem.id)}

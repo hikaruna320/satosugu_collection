@@ -33,24 +33,30 @@
             box-shadow: 0 12px 24px 0 rgba(14, 165, 233, 0.15);
             background: rgba(255, 255, 255, 0.8);
         }
-        /* 隱藏原生 select 的箭頭，改用自訂的 */
         .custom-select {
             -webkit-appearance: none;
             -moz-appearance: none;
             appearance: none;
         }
-        /* 移除 number input 箭頭 */
         input[type=number]::-webkit-inner-spin-button, 
         input[type=number]::-webkit-outer-spin-button { 
             -webkit-appearance: none; 
             margin: 0; 
+        }
+        /* Toast 彈窗動畫 */
+        @keyframes slideInUp {
+            from { transform: translate(-50%, 100%); opacity: 0; }
+            to { transform: translate(-50%, 0); opacity: 1; }
+        }
+        .toast-animate {
+            animation: slideInUp 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
         }
     </style>
 </head>
 <body>
     <div id="root"></div>
     <script type="text/babel">
-        const { useState, useEffect } = React;
+        const { useState, useEffect, useRef, useMemo, useCallback } = React;
 
         const Icon = ({ name, size = 24, className = "", fill = "none" }) => {
             const icons = {
@@ -65,7 +71,15 @@
                 'shield-check': <><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" /><path d="m9 12 2 2 4-4" /></>,
                 'tag': <><path d="M12.586 2.586A2 2 0 0 0 11.172 2H4a2 2 0 0 0-2 2v7.172a2 2 0 0 0 .586 1.414l8.704 8.704a2.426 2.426 0 0 0 3.42 0l6.58-6.58a2.426 2.426 0 0 0 0-3.42z" /><circle cx="7.5" cy="7.5" r=".5" fill="currentColor" /></>,
                 'sort': <><path d="M3 6h18"/><path d="M7 12h10"/><path d="M10 18h4"/></>,
-                'chevron-down': <path d="m6 9 6 6 6-6" />
+                'chevron-down': <path d="m6 9 6 6 6-6" />,
+                'plus': <><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></>,
+                'download': <><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></>,
+                'upload': <><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></>,
+                'image': <><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></>,
+                'check-circle': <><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></>,
+                'arrow-up': <><line x1="12" y1="19" x2="12" y2="5"></line><polyline points="5 12 12 5 19 12"></polyline></>,
+                'edit': <><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></>,
+                'save': <><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></>
             };
             return (
                 <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill={fill} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
@@ -581,8 +595,6 @@
             }
         ];
 
-        const allCategories = ['All', ...new Set(plushData.map(item => item.category))];
-
         const TierBadge = ({ tier, variant = 'badge' }) => {
             const badgeColors = {
                 'Max': 'bg-gradient-to-r from-amber-400 to-orange-500 text-white shadow-md shadow-orange-500/30 border-none',
@@ -600,14 +612,14 @@
 
             if (variant === 'hashtag') {
                 return (
-                    <span className={`text-[11px] md:text-xs font-extrabold tracking-wide ${hashtagColors[tier]} hover:opacity-80 transition-opacity`}>
+                    <span className={`text-[11px] md:text-xs font-extrabold tracking-wide ${hashtagColors[tier] || hashtagColors['Medium']} hover:opacity-80 transition-opacity`}>
                     五夏濃度：{tier}
                     </span>
                 );
             }
 
             return (
-                <span className={`px-2.5 py-1 rounded-full text-xs font-black tracking-wider ${badgeColors[tier]}`}>
+                <span className={`px-2.5 py-1 rounded-full text-xs font-black tracking-wider ${badgeColors[tier] || badgeColors['Medium']}`}>
                     五夏濃度：{tier} 
                 </span>
             );
@@ -616,7 +628,7 @@
         const Stars = ({ count }) => (
             <div className="flex gap-0.5">
                 {[1, 2, 3, 4, 5].map(i => (
-                    <Icon key={i} name="star" size={14} className={i <= count ? "text-amber-400 fill-amber-400" : "text-slate-300"} />
+                    <Icon key={i} name="star" size={14} className={i <= Number(count) ? "text-amber-400 fill-amber-400" : "text-slate-300"} />
                 ))}
             </div>
         );
@@ -630,8 +642,8 @@
             onSelect,
             onPriceChange
         }) => (
-            <div className="glass-card rounded-2xl overflow-hidden cursor-pointer group flex flex-col relative" onClick={() => onSelect(item)}>
-                <div className="relative aspect-square overflow-hidden bg-white/50 transition-all duration-300">
+            <div className="glass-card rounded-2xl overflow-hidden cursor-pointer group flex flex-col relative h-full" onClick={() => onSelect(item)}>
+                <div className="relative aspect-square overflow-hidden bg-white/50 transition-all duration-300 shrink-0">
                     <img 
                         src={item.img} 
                         alt={item.nameTW} 
@@ -649,12 +661,17 @@
                                 <Icon name="heart" size={14} fill="currentColor" />
                             </div>
                         )}
+                        {item.id.startsWith('custom-') && (
+                            <div className="bg-emerald-500 px-2 py-1 rounded-full shadow-md text-white text-[10px] font-bold absolute top-0 left-[-160px] md:left-[-200px] flex items-center gap-1">
+                                自建
+                            </div>
+                        )}
                     </div>
                 </div>
                 <div className="p-3 md:p-4 flex-1 flex flex-col">
                     <p className="text-[10px] font-bold text-sky-600 mb-1 uppercase tracking-wider line-clamp-1" title={item.brand}>{item.brand}</p>
                     <h3 className="font-bold text-slate-800 text-xs md:text-sm leading-snug line-clamp-2 mb-2" title={item.nameTW}>{item.nameTW}</h3>
-                    
+
                     <div className="mt-auto flex flex-col gap-1.5 pt-3 border-t border-slate-200/50">
                         <div className="flex items-center justify-between">
                             <div className="flex-shrink-0"><Stars count={item.rarity} /></div>
@@ -684,15 +701,110 @@
             </div>
         );
 
+        // 虛擬滾動元件 (Virtual Grid)
+        const VirtualGrid = ({ items, renderItem }) => {
+            const containerRef = useRef(null);
+            const [scrollTop, setScrollTop] = useState(0);
+            const [dimensions, setDimensions] = useState({ width: window.innerWidth, height: window.innerHeight });
+
+            useEffect(() => {
+                // 尋找最近的有 overflow-y-auto 的容器，若無則綁定 window
+                const scrollContainer = containerRef.current?.closest('.overflow-y-auto') || window;
+
+                let animationFrameId;
+                const handleScroll = () => {
+                    cancelAnimationFrame(animationFrameId);
+                    animationFrameId = requestAnimationFrame(() => {
+                        if (scrollContainer === window) {
+                            setScrollTop(window.scrollY);
+                        } else {
+                            setScrollTop(scrollContainer.scrollTop);
+                        }
+                    });
+                };
+                const handleResize = () => {
+                    if (scrollContainer === window) {
+                        setDimensions({ width: window.innerWidth, height: window.innerHeight });
+                    } else {
+                        setDimensions({ width: scrollContainer.clientWidth, height: scrollContainer.clientHeight });
+                    }
+                };
+
+                scrollContainer.addEventListener('scroll', handleScroll, { passive: true });
+                window.addEventListener('resize', handleResize);
+                handleScroll(); // Initial call
+                handleResize();
+
+                return () => {
+                    scrollContainer.removeEventListener('scroll', handleScroll);
+                    window.removeEventListener('resize', handleResize);
+                    cancelAnimationFrame(animationFrameId);
+                }
+            }, []);
+
+            // Grid column count based on Tailwind breakpoints
+            const cols = dimensions.width < 768 ? 2 : (dimensions.width < 1024 ? 3 : 4);
+            // Estimate row height based on responsive card design
+            const estimatedRowHeight = dimensions.width < 768 ? 320 : 380; 
+
+            const totalRows = Math.ceil(items.length / cols);
+
+            let relativeScrollY = scrollTop;
+            if (containerRef.current) {
+                const scrollContainer = containerRef.current.closest('.overflow-y-auto');
+                if (scrollContainer) {
+                    // 計算 Grid 距離滾動容器頂部的相對位置
+                    const containerTop = scrollContainer.getBoundingClientRect().top;
+                    const gridTop = containerRef.current.getBoundingClientRect().top;
+                    const offsetFromScrollContainer = gridTop - containerTop + scrollContainer.scrollTop;
+                    relativeScrollY = Math.max(0, scrollTop - offsetFromScrollContainer);
+                } else {
+                    const containerOffset = containerRef.current.getBoundingClientRect().top + window.scrollY;
+                    relativeScrollY = Math.max(0, scrollTop - containerOffset);
+                }
+            }
+
+            const overscanRows = 4; // 緩衝列數，確保滑動平滑
+
+            const startRow = Math.max(0, Math.floor(relativeScrollY / estimatedRowHeight) - overscanRows);
+            const visibleRows = Math.ceil(dimensions.height / estimatedRowHeight) + (overscanRows * 2);
+            const endRow = Math.min(totalRows, startRow + visibleRows);
+
+            const startIndex = startRow * cols;
+            const endIndex = endRow * cols;
+            const visibleItems = items.slice(startIndex, endIndex);
+
+            // 用 Padding 撐開上下方尚未/已滑過不需渲染的空間
+            const paddingTop = startRow * estimatedRowHeight;
+            const paddingBottom = Math.max(0, (totalRows - endRow) * estimatedRowHeight);
+
+            return (
+                <div ref={containerRef} style={{ paddingTop: `${paddingTop}px`, paddingBottom: `${paddingBottom}px` }}>
+                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
+                        {visibleItems.map(item => renderItem(item))}
+                    </div>
+                </div>
+            );
+        };
+
         const App = () => {
             const [currentTab, setCurrentTab] = useState('gallery');
             const [searchQuery, setSearchQuery] = useState('');
             const [filterCategory, setFilterCategory] = useState('All');
             const [uncollectedOnly, setUncollectedOnly] = useState(false);
+            const [customOnly, setCustomOnly] = useState(false);
             const [selectedItem, setSelectedItem] = useState(null);
             const [sortBy, setSortBy] = useState('newest'); 
-            const [visibleCount, setVisibleCount] = useState(12);
+            const [toastMessage, setToastMessage] = useState(null);
+            const fileInputRef = useRef(null);
+            const mainRef = useRef(null);
+            const [showTopBtn, setShowTopBtn] = useState(false);
 
+            // 資料狀態：包含自建資料
+            const [customItems, setCustomItems] = useState(() => {
+                const saved = localStorage.getItem('satoSuguCustomItems_v2');
+                return saved ? JSON.parse(saved) : [];
+            });
             const [collection, setCollection] = useState(() => {
                 const saved = localStorage.getItem('satoSuguCollection_v2');
                 return saved ? JSON.parse(saved) : [];
@@ -706,30 +818,29 @@
                 return saved ? JSON.parse(saved) : {};
             });
 
+            // 新增自建 Modal 狀態與預設表單
+            const initialCustomForm = {
+                id: null, nameTW: '', brand: '私人訂製', category: '其他', series: '自建',
+                tier: 'High', rarity: '3', price: '不適用', img: '', comment: '', releaseDate: ''
+            };
+            const [showCustomModal, setShowCustomModal] = useState(false);
+            const [customForm, setCustomForm] = useState(initialCustomForm);
+
+            // 合併官方與自建資料
+            const allPlushData = useMemo(() => [...plushData, ...customItems], [customItems]);
+            const allCategories = useMemo(() => ['All', ...new Set(allPlushData.map(item => item.category))], [allPlushData]);
+
             useEffect(() => {
                 localStorage.setItem('satoSuguCollection_v2', JSON.stringify(collection));
                 localStorage.setItem('satoSuguWishlist_v2', JSON.stringify(wishlist));
                 localStorage.setItem('satoSuguPurchasePrices_v2', JSON.stringify(purchasePrices));
-            }, [collection, wishlist, purchasePrices]);
+                localStorage.setItem('satoSuguCustomItems_v2', JSON.stringify(customItems));
+            }, [collection, wishlist, purchasePrices, customItems]);
 
-            useEffect(() => {
-                setVisibleCount(12);
-            }, [searchQuery, filterCategory, uncollectedOnly, sortBy, currentTab]);
-
-            useEffect(() => {
-                const handleWindowScroll = () => {
-                    const windowHeight = window.innerHeight || document.documentElement.clientHeight;
-                    const scrollTop = document.documentElement.scrollTop || document.body.scrollTop;
-                    const scrollHeight = document.documentElement.scrollHeight || document.body.scrollHeight;
-
-                    if (scrollHeight - Math.ceil(scrollTop) <= windowHeight + 300) {
-                        setVisibleCount(prev => prev + 12);
-                    }
-                };
-
-                window.addEventListener('scroll', handleWindowScroll);
-                return () => window.removeEventListener('scroll', handleWindowScroll);
-            }, []);
+            const showToast = (msg) => {
+                setToastMessage(msg);
+                setTimeout(() => setToastMessage(null), 3000);
+            };
 
             const toggleCollection = (id) => {
                 if (collection.includes(id)) {
@@ -749,6 +860,107 @@
                 }
             };
 
+            const handlePriceChange = (id, val) => {
+                setPurchasePrices(prev => ({ ...prev, [id]: val }));
+            };
+
+            // 匯出 JSON 功能
+            const handleExport = () => {
+                const data = {
+                    version: '2.1',
+                    timestamp: new Date().toISOString(),
+                    customItems, collection, wishlist, purchasePrices
+                };
+                const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `SatoSugu_Backup_${new Date().toISOString().slice(0,10)}.json`;
+                a.click();
+                URL.revokeObjectURL(url);
+                showToast('🎉 資料匯出成功！請妥善保存備份檔。');
+            };
+
+            // 匯入 JSON 功能
+            const handleImport = (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    try {
+                        const data = JSON.parse(event.target.result);
+                        if (data.collection) setCollection(data.collection);
+                        if (data.wishlist) setWishlist(data.wishlist);
+                        if (data.purchasePrices) setPurchasePrices(data.purchasePrices);
+                        if (data.customItems) setCustomItems(data.customItems);
+                        showToast('✅ 資料還原成功！');
+                    } catch (error) {
+                        showToast('❌ 檔案格式錯誤，無法還原！');
+                    }
+                    e.target.value = ''; // Reset input
+                };
+                reader.readAsText(file);
+            };
+
+            // 提交新增或編輯的自建
+            const submitCustomItem = (e) => {
+                e.preventDefault();
+                if(!customForm.nameTW || !customForm.img) {
+                    showToast('⚠️ 請填寫商品名稱並提供圖片網址');
+                    return;
+                }
+
+                if (customForm.id) {
+                    // 編輯模式
+                    const updatedItem = {
+                        ...selectedItem, // 保留原有的建立時間等資訊
+                        ...customForm,
+                        rarity: Number(customForm.rarity),
+                    };
+                    setCustomItems(prev => prev.map(i => i.id === customForm.id ? updatedItem : i));
+                    setSelectedItem(updatedItem); // 同步更新預覽畫面
+                    showToast('✨ 已更新自建資料！');
+                } else {
+                    // 新增模式
+                    const newItem = {
+                        ...customForm,
+                        id: `custom-${Date.now()}`,
+                        rarity: Number(customForm.rarity),
+                        nameJP: '自建私物 (無日文名)',
+                        marketPrice: '私人收藏無定價',
+                        twPrice: '私人收藏無定價',
+                        releaseDate: customForm.releaseDate || new Date().toISOString().slice(0, 10).replace(/-/g, '/'),
+                        authCheck: ['自建私物', '獨一無二的專屬收藏'],
+                        comment: customForm.comment || '私人專屬的收藏。',
+                    };
+
+                    setCustomItems(prev => [...prev, newItem]);
+                    // 預設將自建加入已擁有
+                    setCollection(prev => [...prev, newItem.id]);
+                    showToast('✨ 成功新增一筆收藏！');
+                }
+
+                setShowCustomModal(false);
+            };
+
+            // 處理進入編輯模式的資料綁定
+            const handleEditCustomClick = () => {
+                setCustomForm({
+                    id: selectedItem.id,
+                    nameTW: selectedItem.nameTW,
+                    brand: selectedItem.brand,
+                    category: selectedItem.category,
+                    series: selectedItem.series,
+                    tier: selectedItem.tier,
+                    rarity: selectedItem.rarity.toString(),
+                    price: selectedItem.price,
+                    img: selectedItem.img,
+                    comment: selectedItem.comment || '',
+                    releaseDate: selectedItem.releaseDate || ''
+                });
+                setShowCustomModal(true);
+            };
+
             const getSortableDate = (dateString) => {
                 if (!dateString) return 0;
                 const match = dateString.match(/(\d{4})(?:\/(\d{1,2}))?/);
@@ -760,50 +972,87 @@
                 return 0; 
             };
 
-            const processedData = plushData
+            // 新增：提取 ID 作為時間戳記，確保自建(巨大數字)排在官方流水號之前
+            const getAddedTimestamp = (id) => {
+                if (id.startsWith('custom-')) {
+                    return parseInt(id.replace('custom-', ''), 10);
+                }
+                if (id.startsWith('plush-')) {
+                    return parseInt(id.replace('plush-', ''), 10);
+                }
+                return 0;
+            };
+
+            const processedData = allPlushData
                 .filter(item => {
                     const matchSearch = item.nameJP.toLowerCase().includes(searchQuery.toLowerCase()) || 
                                         item.nameTW.toLowerCase().includes(searchQuery.toLowerCase()) ||
                                         item.brand.toLowerCase().includes(searchQuery.toLowerCase());
                     const matchCategory = filterCategory === 'All' || item.category === filterCategory;
                     const matchUncollected = uncollectedOnly ? !collection.includes(item.id) : true;
-                    return matchSearch && matchCategory && matchUncollected;
+                    const matchCustomOnly = customOnly ? item.id.startsWith('custom-') : true;
+                    return matchSearch && matchCategory && matchUncollected && matchCustomOnly;
                 })
                 .sort((a, b) => {
                     const dateA = getSortableDate(a.releaseDate);
                     const dateB = getSortableDate(b.releaseDate);
-                    
+
+                    // 取出純數字的時間戳記/流水號
+                    const timeA = getAddedTimestamp(a.id);
+                    const timeB = getAddedTimestamp(b.id);
+
                     if (sortBy === 'tier') {
                         const tierWeight = { 'Max': 4, 'High': 3, 'Medium': 2, 'low': 1 };
-                        const diff = tierWeight[b.tier] - tierWeight[a.tier];
+                        const diff = (tierWeight[b.tier] || 0) - (tierWeight[a.tier] || 0);
                         if (diff !== 0) return diff;
                         const dateDiff = dateB - dateA;
                         if (dateDiff !== 0) return dateDiff;
-                        return b.id.localeCompare(a.id);
+                        return timeB - timeA; // 使用新排序邏輯作為備用
                     } else if (sortBy === 'rarity') {
                         const diff = b.rarity - a.rarity;
                         if (diff !== 0) return diff;
                         const dateDiff = dateB - dateA;
                         if (dateDiff !== 0) return dateDiff;
-                        return b.id.localeCompare(a.id);
+                        return timeB - timeA;
                     } else if (sortBy === 'releaseDate') {
                         if (dateA !== dateB) return dateB - dateA;
-                        return b.id.localeCompare(a.id);
-                    } else { 
-                        return b.id.localeCompare(a.id);
+                        return timeB - timeA;
+                    } else { // sortBy === 'newest'
+                        return timeB - timeA; // 最新的自建數字最大，會排最前面
                     }
                 });
 
-            const visibleData = processedData.slice(0, visibleCount);
-            const ownedItems = collection.slice().reverse().map(id => plushData.find(item => item.id === id)).filter(Boolean);
-            const wishlistItems = wishlist.slice().reverse().map(id => plushData.find(item => item.id === id)).filter(Boolean);
+            const ownedItems = collection.slice().reverse().map(id => allPlushData.find(item => item.id === id)).filter(Boolean);
+            const wishlistItems = wishlist.slice().reverse().map(id => allPlushData.find(item => item.id === id)).filter(Boolean);
 
-            const handlePriceChange = (id, val) => {
-                setPurchasePrices(prev => ({ ...prev, [id]: val }));
+            // 監聽全域視窗滾動以顯示 TOP 按鈕
+            useEffect(() => {
+                const handleWindowScroll = () => {
+                    if (window.scrollY > 300) {
+                        setShowTopBtn(true);
+                    } else {
+                        setShowTopBtn(false);
+                    }
+                };
+                window.addEventListener('scroll', handleWindowScroll, { passive: true });
+                return () => window.removeEventListener('scroll', handleWindowScroll);
+            }, []);
+
+            // 滾動回頂部
+            const scrollToTop = () => {
+                window.scrollTo({ top: 0, behavior: 'smooth' });
             };
 
             return (
-                <div className="min-h-screen bg-gradient-to-br from-sky-100 via-white to-blue-100 flex flex-col font-sans text-slate-800 selection:bg-sky-200">
+                <div className="min-h-screen bg-gradient-to-br from-sky-100 via-white to-blue-100 flex flex-col font-sans text-slate-800 selection:bg-sky-200 relative pb-10">
+
+                    {/* Toast Message */}
+                    {toastMessage && (
+                        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 glass-card bg-slate-800/90 text-white px-6 py-3 rounded-full shadow-2xl flex items-center gap-3 font-bold text-sm toast-animate">
+                            {toastMessage}
+                        </div>
+                    )}
+
                     <header className="w-full h-[180px] sm:h-[220px] md:h-[350px] relative overflow-hidden flex-shrink-0 z-10 shadow-[0_4px_20px_rgba(14,165,233,0.1)] transition-all duration-300">
                         <img 
                             src="image_header.jpg" 
@@ -839,7 +1088,7 @@
                                     <button 
                                         onClick={() => setCurrentTab('dashboard')}
                                         className={`flex-shrink-0 flex items-center gap-2 md:gap-3 px-4 py-3 rounded-xl transition-all duration-300 font-bold text-sm ${currentTab === 'dashboard' ? 'bg-sky-500 text-white shadow-md shadow-sky-500/30' : 'text-slate-600 hover:bg-white/60 hover:text-sky-600'}`}>
-                                        <Icon name="bell" size={20} className={currentTab === 'dashboard' ? "text-white" : "text-sky-500"} /> 版本更新
+                                        <Icon name="download" size={20} className={currentTab === 'dashboard' ? "text-white" : "text-sky-500"} /> 設定
                                     </button>
                                 </nav>
                             </div>
@@ -849,12 +1098,12 @@
                                     <p className="text-xs font-semibold text-slate-500 mb-2 uppercase tracking-wider">個人收藏進度</p>
                                     <div className="flex items-end justify-between">
                                         <span className="text-2xl font-black text-sky-600">{collection.length}</span>
-                                        <span className="text-sm font-medium text-slate-400 mb-1">/ {plushData.length} 款</span>
+                                        <span className="text-sm font-medium text-slate-400 mb-1">/ {allPlushData.length} 款</span>
                                     </div>
                                     <div className="w-full bg-slate-200 h-2 rounded-full mt-3 overflow-hidden">
                                         <div 
                                             className="bg-gradient-to-r from-sky-400 to-blue-500 h-full rounded-full" 
-                                            style={{ width: `${(collection.length / plushData.length) * 100}%` }}>
+                                            style={{ width: `${(collection.length / Math.max(1, allPlushData.length)) * 100}%` }}>
                                         </div>
                                     </div>
                                 </div>
@@ -862,29 +1111,47 @@
                         </aside>
 
                         {/* 主內容區 */}
-                        <main className="flex-1 p-6 md:p-8 overflow-y-auto hide-scrollbar">
-                            
+                        <main ref={mainRef} className="flex-1 p-6 md:p-8 overflow-y-auto hide-scrollbar scroll-smooth relative">
+
                             {currentTab === 'dashboard' && (
                                 <div className="space-y-8 animate-in fade-in duration-500">
                                     <h2 className="text-xl md:text-2xl font-black text-slate-800 flex items-center gap-2">
                                         <span className="w-1.5 h-6 bg-sky-500 rounded-full"></span>
-                                        版本更新總覽
+                                        設定
                                     </h2>
 
-                                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                                        {[
-                                            { label: '收錄總數', value: plushData.length, color: 'text-sky-600' },
-                                            { label: '組合商品', value: plushData.filter(d => d.satoGojo === true && d.suguruGeto === true).length, color: 'text-amber-500' },
-                                            { label: '五條悟商品', value: plushData.filter(d => d.satoGojo).length, color: 'text-blue-500' },
-                                            { label: '夏油傑商品', value: plushData.filter(d => d.suguruGeto).length, color: 'text-indigo-500' }
-                                        ].map((stat, i) => (
-                                            <div key={i} className="glass-panel p-4 md:p-5 rounded-2xl flex flex-col justify-center items-center text-center">
-                                                <span className={`text-2xl md:text-3xl font-black ${stat.color}`}>{stat.value}</span>
-                                                <span className="text-xs font-bold text-slate-500 mt-1">{stat.label}</span>
-                                            </div>
-                                        ))}
+                                    <div className="glass-card p-4 md:p-6 rounded-2xl flex flex-col md:flex-row gap-4 items-center justify-between">
+                                        <div>
+                                            <h3 className="font-bold text-slate-800 flex items-center gap-2"><Icon name="download" size={18} className="text-sky-500"/> 資料備份與還原</h3>
+                                            <p className="text-xs text-slate-500 mt-1">匯出 JSON 備份檔，或上傳還原先前的收藏紀錄。</p>
+                                        </div>
+                                        <div className="flex gap-3 w-full md:w-auto">
+                                            <button onClick={handleExport} className="flex-1 md:flex-none px-4 py-2.5 bg-white border border-slate-200 text-slate-700 hover:text-sky-600 font-bold rounded-lg text-sm shadow-sm transition-all flex justify-center items-center gap-2">
+                                                <Icon name="download" size={16} /> 匯出
+                                            </button>
+                                            <input type="file" accept=".json" className="hidden" ref={fileInputRef} onChange={handleImport} />
+                                            <button onClick={() => fileInputRef.current.click()} className="flex-1 md:flex-none px-4 py-2.5 bg-sky-500 text-white font-bold rounded-lg text-sm shadow-sm hover:bg-sky-600 transition-all flex justify-center items-center gap-2">
+                                                <Icon name="upload" size={16} /> 匯入
+                                            </button>
+                                        </div>
                                     </div>
 
+                                    <div className="mt-8">
+                                        <h3 className="text-lg font-bold text-slate-700 mb-4">🔎 資料總覽</h3>
+                                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                            {[
+                                                { label: '總收錄數', value: allPlushData.length, color: 'text-sky-600' },
+                                                { label: '單人商品', value: `五 ${allPlushData.filter(d => d.satoGojo).length} | 夏 ${allPlushData.filter(d => d.suguruGeto).length}`, color: 'text-indigo-500' },
+                                                { label: '組合商品', value: allPlushData.filter(d => d.satoGojo === true && d.suguruGeto === true).length, color: 'text-amber-500' },
+                                                { label: '自建收藏', value: customItems.length, color: 'text-emerald-500' }
+                                            ].map((stat, i) => (
+                                                <div key={i} className="glass-panel p-4 md:p-5 rounded-2xl flex flex-col justify-center items-center text-center">
+                                                    <span className={`${typeof stat.value === 'string' ? 'text-lg md:text-xl whitespace-nowrap' : 'text-2xl md:text-3xl'} font-black ${stat.color}`}>{stat.value}</span>
+                                                    <span className="text-xs font-bold text-slate-500 mt-1">{stat.label}</span>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
                                     <div className="mt-8">
                                         <h3 className="text-lg font-bold text-slate-700 mb-4">💎 最近更新</h3>
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
@@ -910,8 +1177,8 @@
 
                             {currentTab === 'gallery' && (
                                 <div className="space-y-6 animate-in fade-in duration-500">
-                                    <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 glass-panel p-4 rounded-2xl">
-                                        <div className="relative w-full lg:w-72">
+                                    <div className="flex flex-col xl:flex-row justify-between items-start xl:items-center gap-4 glass-panel p-4 rounded-2xl w-full">
+                                        <div className="relative w-full xl:max-w-xs shrink-0">
                                             <Icon name="search" size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-sky-500" />
                                             <input 
                                                 type="text" 
@@ -921,28 +1188,20 @@
                                                 onChange={(e) => setSearchQuery(e.target.value)}
                                             />
                                         </div>
-                                        <div className="flex flex-col md:flex-row flex-wrap items-stretch md:items-center gap-3 w-full lg:w-auto">
-                                            {/* 未收藏篩選 Checkbox */}
-                                            <label className="flex items-center justify-center md:justify-start gap-2 cursor-pointer glass-card px-4 py-2.5 rounded-xl text-sm font-bold text-slate-700 hover:text-sky-600 transition-all shadow-sm w-full md:w-auto">
-                                                <input 
-                                                    type="checkbox" 
-                                                    className="accent-sky-500 w-4 h-4 cursor-pointer" 
-                                                    checked={uncollectedOnly}
-                                                    onChange={(e) => setUncollectedOnly(e.target.checked)}
-                                                />
-                                                未收藏
-                                            </label>
 
-                                            <div className="flex gap-3 w-full md:w-auto">
-                                                {/* 娃種分類下拉選單 */}
-                                                <div className="relative flex-1 md:w-auto">
+                                        <div className="flex flex-col sm:flex-row flex-wrap xl:flex-nowrap gap-3 w-full xl:w-auto">
+
+                                            <div className="hidden xl:block w-px h-6 bg-slate-300/50 my-auto shrink-0"></div>
+
+                                            <div className="flex flex-row gap-3 w-full sm:w-auto shrink-0">
+                                                <div className="relative flex-1 sm:w-auto shrink-0">
                                                     <div className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none">
                                                         <Icon name="tag" size={16} />
                                                     </div>
                                                     <select 
                                                         value={filterCategory}
                                                         onChange={(e) => setFilterCategory(e.target.value)}
-                                                        className="custom-select w-full md:w-auto pl-9 pr-10 py-2.5 bg-white/70 backdrop-blur-sm border border-white/80 rounded-xl text-sm font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-sky-400 hover:bg-white cursor-pointer transition-all shadow-sm"
+                                                        className="custom-select w-full sm:w-auto pl-9 pr-10 py-2.5 bg-white/70 backdrop-blur-sm border border-white/80 rounded-xl text-sm font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-sky-400 hover:bg-white cursor-pointer transition-all shadow-sm"
                                                     >
                                                         {allCategories.map(cat => (
                                                             <option key={cat} value={cat}>{cat === 'All' ? '全部娃種' : cat}</option>
@@ -953,17 +1212,14 @@
                                                     </div>
                                                 </div>
 
-                                                <div className="hidden lg:block w-px h-6 bg-slate-300/50 my-auto"></div>
-
-                                                {/* 排序下拉選單 */}
-                                                <div className="relative flex-1 md:w-auto">
+                                                <div className="relative flex-1 sm:w-auto shrink-0">
                                                     <div className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none">
                                                         <Icon name="sort" size={16} />
                                                     </div>
                                                     <select 
                                                         value={sortBy}
                                                         onChange={(e) => setSortBy(e.target.value)}
-                                                        className="custom-select w-full md:w-auto pl-9 pr-10 py-2.5 bg-white/70 backdrop-blur-sm border border-white/80 rounded-xl text-sm font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-sky-400 hover:bg-white cursor-pointer transition-all shadow-sm"
+                                                        className="custom-select w-full sm:w-auto pl-9 pr-10 py-2.5 bg-white/70 backdrop-blur-sm border border-white/80 rounded-xl text-sm font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-sky-400 hover:bg-white cursor-pointer transition-all shadow-sm"
                                                     >
                                                         <option value="newest">新增日期 (新到舊)</option>
                                                         <option value="releaseDate">發售日期 (新到舊)</option>
@@ -975,25 +1231,47 @@
                                                     </div>
                                                 </div>
                                             </div>
+
+                                            <div className="flex flex-row gap-2 w-full sm:w-auto overflow-x-auto hide-scrollbar shrink-0">
+                                                <button 
+                                                    onClick={() => {
+                                                        setCustomForm(initialCustomForm);
+                                                        setShowCustomModal(true);
+                                                    }}
+                                                    className="flex-1 sm:flex-none flex justify-center items-center gap-1.5 px-3 py-2.5 bg-gradient-to-r from-sky-500 to-blue-500 text-white text-sm font-bold rounded-xl shadow-md hover:from-sky-600 hover:to-blue-600 transition-all shrink-0">
+                                                    <Icon name="plus" size={18} /> 新增資料
+                                                </button>
+                                                <label className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 cursor-pointer glass-card px-3 py-2.5 rounded-xl text-sm font-bold text-slate-700 hover:text-sky-600 transition-all shadow-sm shrink-0 whitespace-nowrap">
+                                                    <input 
+                                                        type="checkbox" 
+                                                        className="accent-sky-500 w-4 h-4 cursor-pointer" 
+                                                        checked={customOnly}
+                                                        onChange={(e) => setCustomOnly(e.target.checked)}
+                                                    />
+                                                    僅顯示自建
+                                                </label>
+                                            </div>
+
                                         </div>
                                     </div>
 
-                                    {/* 畫廊列表 (使用延遲載入渲染) */}
-                                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
-                                        {visibleData.map(item => (
-                                            <ProductCard 
-                                                key={item.id} 
-                                                item={item} 
-                                                collection={collection}
-                                                wishlist={wishlist}
-                                                onSelect={setSelectedItem}
-                                            />
-                                        ))}
-                                    </div>
-
-                                    {processedData.length === 0 && (
+                                    {/* 畫廊列表：套用虛擬滾動 */}
+                                    {processedData.length > 0 ? (
+                                        <VirtualGrid 
+                                            items={processedData} 
+                                            renderItem={(item) => (
+                                                <ProductCard 
+                                                    key={item.id} 
+                                                    item={item} 
+                                                    collection={collection}
+                                                    wishlist={wishlist}
+                                                    onSelect={setSelectedItem}
+                                                />
+                                            )}
+                                        />
+                                    ) : (
                                         <div className="text-center py-20 text-slate-500 font-medium glass-panel rounded-2xl">
-                                            找不到符合條件的娃娃 🥲
+                                            找不到符合條件的收藏 🥲
                                         </div>
                                     )}
                                 </div>
@@ -1027,13 +1305,14 @@
 
                                     <div>
                                         <h3 className="text-lg font-bold text-slate-700 mb-4 flex items-center gap-2">
-                                            <Icon name="shield-check" size={20} className="text-sky-500" /> 已擁有的神物
+                                            <Icon name="shield-check" size={20} className="text-sky-500" /> 已擁有的收藏
                                         </h3>
-                                        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
-                                            {ownedItems.length > 0 ? 
-                                                ownedItems.map(item => (
+                                        {ownedItems.length > 0 ? (
+                                            <VirtualGrid 
+                                                items={ownedItems}
+                                                renderItem={(item) => (
                                                     <ProductCard 
-                                                        key={item.id} 
+                                                        key={`owned-${item.id}`} 
                                                         item={item} 
                                                         showPriceInput={true}
                                                         collection={collection}
@@ -1042,10 +1321,11 @@
                                                         onSelect={setSelectedItem}
                                                         onPriceChange={handlePriceChange}
                                                     />
-                                                )) : 
-                                                <div className="col-span-full py-8 text-center text-sm text-slate-400 font-medium">尚未添加任何收藏。去圖鑑列表逛逛吧！</div>
-                                            }
-                                        </div>
+                                                )}
+                                            />
+                                        ) : (
+                                            <div className="col-span-full py-8 text-center text-sm text-slate-400 font-medium">尚未添加任何收藏。去圖鑑列表逛逛吧！</div>
+                                        )}
                                     </div>
 
                                     <div className="pt-4 border-t border-slate-200/50">
@@ -1056,7 +1336,7 @@
                                             {wishlistItems.length > 0 ? 
                                                 wishlistItems.map(item => (
                                                     <ProductCard 
-                                                        key={item.id} 
+                                                        key={`wish-${item.id}`} 
                                                         item={item}
                                                         collection={collection}
                                                         wishlist={wishlist}
@@ -1080,6 +1360,100 @@
                         </main>
                     </div>
 
+                    {/* 自建 Modal 表單 */}
+                    {showCustomModal && (
+                        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
+                            <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={() => setShowCustomModal(false)}></div>
+                            <div className="relative w-full max-w-md bg-white rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+                                <div className="bg-sky-50 px-6 py-4 border-b border-sky-100 flex justify-between items-center shrink-0">
+                                    <h3 className="font-black text-slate-800 flex items-center gap-2">
+                                        <Icon name={customForm.id ? "edit" : "plus"} size={18} className="text-sky-600" /> {customForm.id ? "編輯自建資料" : "我要建立一筆新收藏"}
+                                    </h3>
+                                    <button onClick={() => setShowCustomModal(false)} className="text-slate-400 hover:text-slate-700 bg-white rounded-full p-1 shadow-sm">
+                                        <Icon name="x" size={18} />
+                                    </button>
+                                </div>
+                                <form onSubmit={submitCustomItem} className="p-6 overflow-y-auto space-y-4">
+                                    <div>
+                                        <label className="block text-xs font-bold text-slate-600 mb-1">商品名稱 (必填)</label>
+                                        <input required type="text" placeholder="例如：自製五夏毛線娃" className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-sky-400 focus:outline-none" 
+                                            value={customForm.nameTW} onChange={e => setCustomForm({...customForm, nameTW: e.target.value})} />
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs font-bold text-slate-600 mb-1 flex justify-between">
+                                            <span>圖片網址 URL (必填)</span>
+                                            <span className="text-slate-400 font-normal text-[10px]">考量容量限用網址</span>
+                                        </label>
+                                        <div className="relative">
+                                            <Icon name="image" size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                                            <input required type="url" placeholder="https://..." className="w-full pl-9 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-sky-400 focus:outline-none" 
+                                                value={customForm.img} onChange={e => setCustomForm({...customForm, img: e.target.value})} />
+                                        </div>
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div>
+                                            <label className="block text-xs font-bold text-slate-600 mb-1">品牌 / 來源</label>
+                                            <input type="text" className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-sky-400 focus:outline-none" 
+                                                value={customForm.brand} onChange={e => setCustomForm({...customForm, brand: e.target.value})} />
+                                        </div>
+                                        <div>
+                                            <label className="block text-xs font-bold text-slate-600 mb-1">分類</label>
+                                            <input type="text" className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-sky-400 focus:outline-none" 
+                                                value={customForm.category} onChange={e => setCustomForm({...customForm, category: e.target.value})} />
+                                        </div>
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div>
+                                            <label className="block text-xs font-bold text-slate-600 mb-1">發售日 (発売日)</label>
+                                            <input type="text" placeholder="例：2024/05 或 預購中" className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-sky-400 focus:outline-none" 
+                                                value={customForm.releaseDate} onChange={e => setCustomForm({...customForm, releaseDate: e.target.value})} />
+                                        </div>
+                                        <div>
+                                            <label className="block text-xs font-bold text-slate-600 mb-1">所屬企劃 (系列)</label>
+                                            <input type="text" placeholder="例：自建 或 同人" className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-sky-400 focus:outline-none" 
+                                                value={customForm.series} onChange={e => setCustomForm({...customForm, series: e.target.value})} />
+                                        </div>
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div>
+                                            <label className="block text-xs font-bold text-slate-600 mb-1">五夏濃度標籤</label>
+                                            <select className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-sky-400 focus:outline-none"
+                                                value={customForm.tier} onChange={e => setCustomForm({...customForm, tier: e.target.value})}>
+                                                <option value="Max">Max</option>
+                                                <option value="High">High</option>
+                                                <option value="Medium">Medium</option>
+                                                <option value="low">Low</option>
+                                            </select>
+                                        </div>
+                                        <div>
+                                            <label className="block text-xs font-bold text-slate-600 mb-1">稀有度 (星級)</label>
+                                            <select className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-sky-400 focus:outline-none"
+                                                value={customForm.rarity} onChange={e => setCustomForm({...customForm, rarity: e.target.value})}>
+                                                {[5,4,3,2,1].map(n => <option key={n} value={n}>{n} 星</option>)}
+                                            </select>
+                                        </div>
+                                    </div>
+
+                                    <div>
+                                        <label className="block text-xs font-bold text-slate-600 mb-1">私人短評 / 筆記</label>
+                                        <textarea 
+                                            placeholder="寫下關於這個收藏的簡短心得或筆記..." 
+                                            className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-sky-400 focus:outline-none resize-none h-20" 
+                                            value={customForm.comment} onChange={e => setCustomForm({...customForm, comment: e.target.value})} 
+                                        />
+                                    </div>
+
+                                    <div className="pt-4 mt-2 border-t border-slate-100 shrink-0">
+                                        <button type="submit" className="w-full flex justify-center items-center gap-2 py-3 bg-sky-500 hover:bg-sky-600 text-white font-bold rounded-xl shadow-md transition-all">
+                                            <Icon name="save" size={18} /> {customForm.id ? "儲存修改" : "儲存並加入收藏"}
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* 單張商品檢視 Modal */}
                     {selectedItem && (
                         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 md:p-6 animate-in fade-in duration-200">
                             <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onClick={() => setSelectedItem(null)}></div>
@@ -1114,6 +1488,29 @@
                                             <Icon name="heart" size={18} fill={wishlist.includes(selectedItem.id) ? "currentColor" : "none"} /> 想收
                                         </button>
                                     </div>
+
+                                    {/* 編輯與刪除自建按鈕 */}
+                                    {selectedItem.id.startsWith('custom-') && (
+                                        <div className="flex gap-2 mt-3 w-full">
+                                            <button 
+                                                onClick={handleEditCustomClick}
+                                                className="flex-1 py-2 text-xs font-bold text-sky-600 hover:bg-sky-50 rounded-lg transition-colors border border-sky-100">
+                                                編輯資料
+                                            </button>
+                                            <button 
+                                                onClick={() => {
+                                                    if(confirm('確定要刪除這筆自建資料嗎？')) {
+                                                        setCustomItems(prev => prev.filter(i => i.id !== selectedItem.id));
+                                                        setCollection(prev => prev.filter(id => id !== selectedItem.id));
+                                                        setSelectedItem(null);
+                                                        showToast('🗑️ 已刪除這筆資料');
+                                                    }
+                                                }}
+                                                className="flex-1 py-2 text-xs font-bold text-red-500 hover:bg-red-50 rounded-lg transition-colors border border-red-100">
+                                                刪除資料
+                                            </button>
+                                        </div>
+                                    )}
                                 </div>
 
                                 <div className="flex-1 p-6 md:p-8 overflow-y-auto hide-scrollbar">
@@ -1160,13 +1557,7 @@
                                                 placeholder="0"
                                                 className="w-32 px-3 py-2 bg-white border border-slate-200 rounded-xl text-right font-black text-sky-600 focus:outline-none focus:ring-2 focus:ring-sky-400 focus:border-transparent transition-all shadow-sm"
                                                 value={purchasePrices[selectedItem.id] || ''}
-                                                onChange={(e) => {
-                                                    const val = e.target.value;
-                                                    setPurchasePrices(prev => ({
-                                                        ...prev,
-                                                        [selectedItem.id]: val
-                                                    }));
-                                                }}
+                                                onChange={(e) => handlePriceChange(selectedItem.id, e.target.value)}
                                             />
                                         </div>
                                     </div>
@@ -1204,6 +1595,15 @@
                             </div>
                         </div>
                     )}
+
+                    {/* 回到頂部按鈕 */}
+                    <button
+                        onClick={scrollToTop}
+                        className={`fixed bottom-6 right-6 md:bottom-8 md:right-8 z-50 flex flex-col items-center justify-center w-12 h-12 bg-gradient-to-br from-sky-400 to-blue-500 text-white rounded-full shadow-[0_4px_14px_rgba(14,165,233,0.4)] hover:shadow-[0_6px_20px_rgba(14,165,233,0.6)] transition-all duration-300 ${showTopBtn ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4 pointer-events-none'}`}
+                    >
+                        <Icon name="arrow-up" size={20} />
+                        <span className="text-[10px] font-black leading-none mt-0.5">TOP</span>
+                    </button>
                 </div>
             );
         };

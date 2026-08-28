@@ -39,6 +39,12 @@
             -moz-appearance: none;
             appearance: none;
         }
+        /* 移除 number input 箭頭 */
+        input[type=number]::-webkit-inner-spin-button, 
+        input[type=number]::-webkit-outer-spin-button { 
+            -webkit-appearance: none; 
+            margin: 0; 
+        }
     </style>
 </head>
 <body>
@@ -106,7 +112,6 @@
                 img: 'plush-003_伴偶 vol.9 五條.jpg'
             },
             {
-                
                 id: 'plush-005', tier: 'Max', category: '布偶吊飾',
                 nameJP: 'JS 五条＆夏油 スーツVer. マスコット2体セット', nameTW: '西裝相聲 雙人吊飾娃套組', type: 'マスコット',
                 brand: 'JUMP SHOP', releaseDate: '2021/12', price: '¥3,300', marketPrice: '¥1,500～¥2,500', twPrice: '完賣品，可尋二手轉賣',
@@ -585,7 +590,7 @@
             const [uncollectedOnly, setUncollectedOnly] = useState(false);
             const [selectedItem, setSelectedItem] = useState(null);
             const [sortBy, setSortBy] = useState('newest'); 
-            const [visibleCount, setVisibleCount] = useState(12); // Lazy loading initial count
+            const [visibleCount, setVisibleCount] = useState(12);
 
             const [collection, setCollection] = useState(() => {
                 const saved = localStorage.getItem('satoSuguCollection_v2');
@@ -606,19 +611,16 @@
                 localStorage.setItem('satoSuguPurchasePrices_v2', JSON.stringify(purchasePrices));
             }, [collection, wishlist, purchasePrices]);
 
-            // Reset lazy loading limit when filters change
             useEffect(() => {
                 setVisibleCount(12);
             }, [searchQuery, filterCategory, uncollectedOnly, sortBy, currentTab]);
 
-            // 監聽整個視窗的捲動事件 (取代原本綁在 main 的 onScroll)
             useEffect(() => {
                 const handleWindowScroll = () => {
                     const windowHeight = window.innerHeight || document.documentElement.clientHeight;
                     const scrollTop = document.documentElement.scrollTop || document.body.scrollTop;
                     const scrollHeight = document.documentElement.scrollHeight || document.body.scrollHeight;
 
-                    // 當視窗距離底部小於 300px 時，自動載入後續 12 筆
                     if (scrollHeight - Math.ceil(scrollTop) <= windowHeight + 300) {
                         setVisibleCount(prev => prev + 12);
                     }
@@ -646,7 +648,6 @@
                 }
             };
 
-            // Improved date extraction for sorting
             const getSortableDate = (dateString) => {
                 if (!dateString) return 0;
                 const match = dateString.match(/(\d{4})(?:\/(\d{1,2}))?/);
@@ -677,7 +678,7 @@
                         if (diff !== 0) return diff;
                         const dateDiff = dateB - dateA;
                         if (dateDiff !== 0) return dateDiff;
-                        return b.id.localeCompare(a.id); // Ultimate fallback
+                        return b.id.localeCompare(a.id);
                     } else if (sortBy === 'rarity') {
                         const diff = b.rarity - a.rarity;
                         if (diff !== 0) return diff;
@@ -687,16 +688,12 @@
                     } else if (sortBy === 'releaseDate') {
                         if (dateA !== dateB) return dateB - dateA;
                         return b.id.localeCompare(a.id);
-                    } else { // newest
+                    } else { 
                         return b.id.localeCompare(a.id);
                     }
                 });
 
-            // Lazy loaded subset of data
             const visibleData = processedData.slice(0, visibleCount);
-
-            // Fetch owned/wishlist items strictly by the reversed array of local storage
-            // This ensures they appear newest-added to oldest-added
             const ownedItems = collection.slice().reverse().map(id => plushData.find(item => item.id === id)).filter(Boolean);
             const wishlistItems = wishlist.slice().reverse().map(id => plushData.find(item => item.id === id)).filter(Boolean);
 
@@ -738,8 +735,9 @@
                 </div>
             );
 
-            const ProductCard = ({ item }) => (
-                <div className="glass-card rounded-2xl overflow-hidden cursor-pointer group flex flex-col" onClick={() => setSelectedItem(item)}>
+            // 修改了 ProductCard，新增 showPriceInput 參數
+            const ProductCard = ({ item, showPriceInput = false }) => (
+                <div className="glass-card rounded-2xl overflow-hidden cursor-pointer group flex flex-col relative" onClick={() => setSelectedItem(item)}>
                     <div className="relative aspect-square overflow-hidden bg-white/50 transition-all duration-300">
                         <img 
                             src={item.img} 
@@ -763,6 +761,7 @@
                     <div className="p-3 md:p-4 flex-1 flex flex-col">
                         <p className="text-[10px] font-bold text-sky-600 mb-1 uppercase tracking-wider line-clamp-1" title={item.brand}>{item.brand}</p>
                         <h3 className="font-bold text-slate-800 text-xs md:text-sm leading-snug line-clamp-2 mb-2" title={item.nameTW}>{item.nameTW}</h3>
+                        
                         <div className="mt-auto flex flex-col gap-1.5 pt-3 border-t border-slate-200/50">
                             <div className="flex items-center justify-between">
                                 <div className="flex-shrink-0"><Stars count={item.rarity} /></div>
@@ -774,6 +773,24 @@
                                 <TierBadge tier={item.tier} variant="hashtag" />
                             </div>
                         </div>
+
+                        {/* 新增的購入金額快捷輸入區塊 (只在有傳入 showPriceInput 為 true 時顯示) */}
+                        {showPriceInput && (
+                            <div className="mt-3 pt-3 border-t border-slate-200/50 flex items-center justify-between gap-2" onClick={(e) => e.stopPropagation()}>
+                                <span className="text-[10px] font-bold text-slate-500 whitespace-nowrap">購入金額 NT$</span>
+                                <input
+                                    type="number"
+                                    min="0"
+                                    placeholder="0"
+                                    className="w-16 md:w-20 px-1.5 py-1 bg-white/70 border border-slate-200 rounded-md text-right font-bold text-sky-600 text-xs focus:outline-none focus:ring-1 focus:ring-sky-400 focus:border-transparent transition-all shadow-sm"
+                                    value={purchasePrices[item.id] || ''}
+                                    onChange={(e) => {
+                                        const val = e.target.value;
+                                        setPurchasePrices(prev => ({ ...prev, [item.id]: val }));
+                                    }}
+                                />
+                            </div>
+                        )}
                     </div>
                 </div>
             );
@@ -1002,7 +1019,8 @@
                                         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
                                             {ownedItems.length > 0 ? 
                                                 ownedItems.map(item => (
-                                                    <ProductCard key={item.id} item={item} />
+                                                    // 這裡傳入 showPriceInput={true} 來開啟快捷輸入功能
+                                                    <ProductCard key={item.id} item={item} showPriceInput={true} />
                                                 )) : 
                                                 <div className="col-span-full py-8 text-center text-sm text-slate-400 font-medium">尚未添加任何收藏。去圖鑑列表逛逛吧！</div>
                                             }
